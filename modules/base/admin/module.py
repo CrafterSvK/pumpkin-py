@@ -1,7 +1,6 @@
 import shutil
 import tempfile
 from pathlib import Path
-from typing import List, Optional, Set
 
 import discord
 from discord.ext import commands, tasks
@@ -100,16 +99,14 @@ class Admin(commands.Cog):
     @repository_.command(name="list")
     async def repository_list(self, ctx):
         """List module repositories."""
-        repositories: List[Repository] = manager.repositories
+        repositories: list[Repository] = manager.repositories
 
         # This allows us to print non-loaded modules in *italics* and loaded
         # (and thus available) in regular font.
-        loaded_modules: Set[str] = set(
-            [
-                cog.__module__[8:-7]  # strip 'modules.' & '.module' from the name
-                for cog in sorted(self.bot.cogs.values(), key=lambda m: m.__module__)
-            ]
-        )
+        loaded_modules: set[str] = {
+            cog.__module__[8:-7]  # strip 'modules.' & '.module' from the name
+            for cog in sorted(self.bot.cogs.values(), key=lambda m: m.__module__)
+        }
 
         class Item:
             def __init__(self, repository: Repository, line: int):
@@ -119,7 +116,7 @@ class Admin(commands.Cog):
                     self.name = ""
 
                 if line == 0 or line == 1:
-                    modules: List[str] = []
+                    modules: list[str] = []
                     for module_name in repository.module_names:
                         full_module_name: str = f"{repository.name}.{module_name}"
                         if line == 0 and full_module_name in loaded_modules:
@@ -143,12 +140,12 @@ class Admin(commands.Cog):
                     self.key = _(ctx, "commit text")
                     self.values = commit.summary
 
-        items: List[Item] = []
+        items: list[Item] = []
         for repository in repositories:
             for line in range(4):
                 items.append(Item(repository, line))
 
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             items,
             header={
                 "name": _(ctx, "Repository"),
@@ -163,14 +160,14 @@ class Admin(commands.Cog):
     @commands.max_concurrency(1, per=commands.BucketType.default, wait=False)
     @check.acl2(check.ACLevel.BOT_OWNER)
     @repository_.command(name="install")
-    async def repository_install(self, ctx, url: str, branch: Optional[str] = None):
+    async def repository_install(self, ctx, url: str, branch: str | None = None):
         """Install module repository."""
         tempdir = tempfile.TemporaryDirectory()
         workdir = Path(tempdir.name) / "pumpkin-module"
 
         # download to temporary directory
         async with ctx.typing():
-            stderr: Optional[str] = Repository.git_clone(workdir, url)
+            stderr: str | None = Repository.git_clone(workdir, url)
         if stderr is not None:
             tempdir.cleanup()
             for output in utils.text.split(stderr):
@@ -198,7 +195,7 @@ class Admin(commands.Cog):
 
         # install requirements
         async with ctx.typing():
-            install: Optional[str] = repository.install_requirements()
+            install: str | None = repository.install_requirements()
             if install is not None:
                 for output in utils.text.split(install):
                     await ctx.send("```" + output + "```")
@@ -244,7 +241,7 @@ class Admin(commands.Cog):
     @commands.max_concurrency(1, per=commands.BucketType.default, wait=False)
     @check.acl2(check.ACLevel.BOT_OWNER)
     @repository_.command(name="update", aliases=["fetch", "pull"])
-    async def repository_update(self, ctx, name: str, option: Optional[str]):
+    async def repository_update(self, ctx, name: str, option: str | None):
         """Update module repository.
 
         Args:
@@ -259,18 +256,18 @@ class Admin(commands.Cog):
                 )
                 return
 
-        repository: Optional[Repository] = manager.get_repository(name)
+        repository: Repository | None = manager.get_repository(name)
         if repository is None:
             await ctx.reply(_(ctx, "No such repository."))
             return
 
-        requirements_txt_hash: str = repository.requirements_txt_hash
+        requirements_txt_hash = repository.requirements_txt_hash
 
         async with ctx.typing():
             if option == "reset":
-                pull: str = repository.git_reset_pull()
+                pull = repository.git_reset_pull()
             else:
-                pull: str = repository.git_pull(option == "force")
+                pull = repository.git_pull(option == "force")
         for output in utils.text.split(pull):
             await ctx.send("```" + output + "```")
 
@@ -282,7 +279,7 @@ class Admin(commands.Cog):
             requirements_txt_updated = True
 
             async with ctx.typing():
-                install: str = repository.install_requirements()
+                install = repository.install_requirements()
                 if install is not None:
                     for output in utils.text.split(install):
                         await ctx.send("```" + output + "```")
@@ -293,7 +290,7 @@ class Admin(commands.Cog):
                 + str(repository.head_commit)[:7]
             )
         else:
-            log_message: str = f"Repository {name} updated: " + output[10:25]
+            log_message = f"Repository {name} updated: " + output[10:25]
 
         if requirements_txt_updated:
             log_message += " requirements.txt differed, pip was run."
@@ -304,26 +301,24 @@ class Admin(commands.Cog):
     @repository_.command(name="checkout")
     async def repository_checkout(self, ctx, name: str, branch: str):
         """Change current branch of the repository."""
-        repository: Optional[Repository] = manager.get_repository(name)
+        repository: Repository | None = manager.get_repository(name)
         if repository is None:
             await ctx.reply(_(ctx, "No such repository."))
             return
 
-        requirements_txt_hash: str = repository.requirements_txt_hash
+        requirements_txt_hash = repository.requirements_txt_hash
 
         try:
             repository.change_branch(branch)
         except Exception as exc:
-            await ctx.reply(
-                _(ctx, "Could not change branch: {exc}").format(exc=str(exc))
-            )
+            await ctx.reply(_(ctx, "Could not change branch: {exc}").format(exc=str(exc)))
             return
 
         if repository.requirements_txt_hash != requirements_txt_hash:
             await ctx.send(_(ctx, "File `requirements.txt` changed, running `pip`."))
 
             async with ctx.typing():
-                install: str = repository.install_requirements()
+                install = repository.install_requirements()
                 if install is not None:
                     for output in utils.text.split(install):
                         await ctx.send("```" + output + "```")
@@ -344,7 +339,7 @@ class Admin(commands.Cog):
             await ctx.reply(_(ctx, "This repository is protected."))
             return
 
-        repository: Optional[Repository] = manager.get_repository(name)
+        repository: Repository | None = manager.get_repository(name)
         if repository is None:
             await ctx.reply(_(ctx, "No such repository."))
             return
@@ -576,7 +571,7 @@ class Admin(commands.Cog):
                 self.primary = _(ctx, "Yes") if spam_channel.primary else ""
 
         items = [Item(channel) for channel in spam_channels]
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             items,
             header={
                 "name": _(ctx, "Channel name"),

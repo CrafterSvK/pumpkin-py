@@ -37,7 +37,7 @@ def get(module: commands.Cog, guild_id: int, key: str, default_value=None) -> An
     if not t:
         return default_value
 
-    value = t(db_value.value)
+    value = t(db_value.value)  # type: ignore
 
     return value
 
@@ -60,7 +60,7 @@ def exists(module: commands.Cog, guild_id: int, key: str) -> bool:
     return db_value is not None
 
 
-def get_type(module: commands.Cog, guild_id: int, key: str) -> type:
+def get_type(module: commands.Cog, guild_id: int, key: str) -> type | None:
     """Get data type.
 
     Args:
@@ -79,11 +79,11 @@ def get_type(module: commands.Cog, guild_id: int, key: str) -> type:
 
     t = locate(db_value.type)
 
-    return t
+    return t  # type: ignore
 
 
 def set(module: commands.Cog, guild_id: int, key: str, value: object) -> bool:
-    """Stores value into DB. If data exists, it's overwriten.
+    """Stores value into DB. If data exists, it's overwritten.
 
     This is designed for basic data types (int, float, bool, string).
     Using this for any other data types can cause problems!
@@ -95,7 +95,7 @@ def set(module: commands.Cog, guild_id: int, key: str, value: object) -> bool:
         value (:class: `typing.Any`): Value to store in DB
 
     Returns:
-        True if succesfuly saved, False otherwise
+        True if successfully saved, False otherwise
     """
 
     return StorageData.set(module.qualified_name, guild_id, key, value) is not None
@@ -114,7 +114,7 @@ def set_if_missing(module: commands.Cog, guild_id: int, key: str, value: Any) ->
         value (:class: `typing.Any`): Value to store in DB
 
     Returns:
-        True if succesfuly saved, False otherwise
+        True if successfully saved, False otherwise
     """
 
     return (
@@ -125,7 +125,7 @@ def set_if_missing(module: commands.Cog, guild_id: int, key: str, value: Any) ->
     )
 
 
-def unset(module: commands.Cog, guild_id: int, key: str):
+def unset(module: commands.Cog, guild_id: int, key: str) -> bool:
     """Delete module's stored data by guild and key.
 
     Args:
@@ -134,7 +134,7 @@ def unset(module: commands.Cog, guild_id: int, key: str):
         key (:class:'str'): Value's key
 
     Returns:
-        True if succesfuly deleted, False if not found
+        True if successfully deleted, False if not found
     """
 
     deleted = StorageData.remove(module.qualified_name, guild_id, key)

@@ -1,20 +1,19 @@
 from __future__ import annotations
-from typing import Dict, Union
 
-from sqlalchemy import Column, String, Integer
+from sqlalchemy.orm import mapped_column, Mapped
 
-from pie.database import database, session
+from pie.database import session, Base
 
 
-class Config(database.base):
+class Config(Base):
     """Global bot configuration."""
 
     __tablename__ = "config"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    prefix = Column(String, default="!")
-    language = Column(String, default="en")
-    status = Column(String, default="online")
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    prefix: Mapped[str] = mapped_column(default="!")
+    language: Mapped[str] = mapped_column(default="en")
+    status: Mapped[str] = mapped_column(default="online")
 
     @staticmethod
     def get() -> Config:
@@ -57,7 +56,7 @@ class Config(database.base):
             f'prefix="{self.prefix}" language="{self.language}">'
         )
 
-    def dump(self) -> Dict[str, Union[bool, str]]:
+    def dump(self) -> dict[str, bool | str]:
         return {
             "prefix": self.prefix,
             "language": self.language,

@@ -1,6 +1,6 @@
 import contextlib
 import datetime
-from typing import Callable, Dict, Optional, List
+from collections.abc import Callable
 
 import discord
 from discord.ext import commands
@@ -20,8 +20,8 @@ class _SpamchannelManager:
         self.time_limit = datetime.timedelta(minutes=time_limit)
         self.message_limit: int = message_limit
 
-        self.cooldown: Dict[int, List[datetime.datetime]] = {}
-        self.frozen: Dict[int, bool] = {}
+        self.cooldown: dict[int, list[datetime.datetime]] = {}
+        self.frozen: dict[int, bool] = {}
 
     def _ensure_key(self, channel_id: int) -> None:
         """Make sure that the internal dictionaries know about the channel."""
@@ -35,8 +35,8 @@ class _SpamchannelManager:
         if channel_id not in self.cooldown.keys():
             return
 
-        now = datetime.datetime.now(datetime.timezone.utc)
-        new_cooldown: List[datetime.datetime] = []
+        now = datetime.datetime.now(datetime.UTC)
+        new_cooldown: list[datetime.datetime] = []
         for timestamp in self.cooldown[channel_id]:
             if (now - timestamp) <= self.time_limit:
                 new_cooldown.append(timestamp)
@@ -115,17 +115,13 @@ async def _run(ctx: commands.Context, hard: bool) -> bool:
         _trace("In spamchannel, invocation allowed.")
         return True
 
-    primary: Optional[SpamChannel] = None
+    primary: SpamChannel | None = None
     with contextlib.suppress(IndexError):
         primary = [s for s in spamchannels if s.primary][0]
     if not primary:
         primary = spamchannels[0]
 
-    await ctx.send(
-        "<@{user}> 👉 <#{channel}>".format(
-            user=ctx.author.id, channel=primary.channel_id
-        )
-    )
+    await ctx.send(f"<@{ctx.author.id}> 👉 <#{primary.channel_id}>")
 
     if hard:
         # Don't return 'False', because that triggers

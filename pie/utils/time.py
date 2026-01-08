@@ -5,9 +5,7 @@ import dateutil.parser
 
 def id_to_datetime(snowflake_id: int) -> datetime.datetime:
     """Convert snowflake ID to timestamp."""
-    return datetime.datetime.fromtimestamp(
-        ((snowflake_id >> 22) + 1420070400000) / 1000
-    )
+    return datetime.datetime.fromtimestamp(((snowflake_id >> 22) + 1420070400000) / 1000)
 
 
 def format_date(timestamp: datetime.datetime) -> str:
@@ -49,7 +47,7 @@ def parse_iso8601_datetime(string: str) -> datetime.datetime:
 
 
 def parse_fuzzy_datetime(
-    string: str, *, relative_to: datetime.datetime = None
+    string: str, *, relative_to: datetime.datetime | None = None
 ) -> datetime.datetime:
     """Parses datetime string and returns a datetime.
 

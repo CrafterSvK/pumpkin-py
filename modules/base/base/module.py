@@ -1,5 +1,4 @@
 from math import ceil
-from typing import List, Tuple, Dict, Set
 
 import discord
 from discord.ext import commands, tasks
@@ -22,7 +21,7 @@ class Base(commands.Cog):
         self.durations = {"1h": 60, "1d": 1440, "3d": 4320, "7d": 10080}
 
         # intended structure: {message_id : {user_ids,}}
-        self.bookmark_cache: Dict[int, Set[int]] = {}
+        self.bookmark_cache: dict[int, set[int]] = {}
         self.dump_cache.start()
 
     #
@@ -66,7 +65,7 @@ class Base(commands.Cog):
                 self.limit = db_channel.limit
 
         channels = [Item(db_channel) for db_channel in db_channels]
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             channels,
             header={
                 "name": _(ctx, "Channel name"),
@@ -159,7 +158,7 @@ class Base(commands.Cog):
                 self.enabled = _(ctx, "Yes") if db_channel.enabled else _(ctx, "No")
 
         channels = [Item(db_channel) for db_channel in db_channels]
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             channels,
             header={
                 "name": _(ctx, "Channel name"),
@@ -232,7 +231,7 @@ class Base(commands.Cog):
                 self.limit = db_channel.limit
 
         channels = [Item(db_channel) for db_channel in db_channels]
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             channels,
             header={
                 "name": _(ctx, "Channel name"),
@@ -245,9 +244,7 @@ class Base(commands.Cog):
 
     @check.acl2(check.ACLevel.MOD)
     @userthread_.command(name="set")
-    async def userthread_set(
-        self, ctx, limit: int, channel: discord.TextChannel = None
-    ):
+    async def userthread_set(self, ctx, limit: int, channel: discord.TextChannel = None):
         """Set reaction limit for creating threads.
 
         Omit the channel to set preference for whole server.
@@ -312,7 +309,7 @@ class Base(commands.Cog):
     @autothread_.command(name="list")
     async def autothread_list(self, ctx):
         """List channels where threads are created automatically."""
-        channels: List[Tuple[discord.TextChannel, AutoThread]] = []
+        channels: list[tuple[discord.TextChannel, AutoThread]] = []
 
         for item in AutoThread.get_all(ctx.guild.id):
             channel = ctx.guild.get_channel(item.channel_id)
@@ -359,9 +356,7 @@ class Base(commands.Cog):
             )
             return
         AutoThread.add(ctx.guild.id, channel.id, duration_translated)
-        await ctx.reply(
-            _(ctx, "Threads will be automatically created in that channel.")
-        )
+        await ctx.reply(_(ctx, "Threads will be automatically created in that channel."))
         await guild_log.info(
             ctx.author,
             ctx.channel,
@@ -569,16 +564,15 @@ class Base(commands.Cog):
     ):
         """Handle bookmark functionality."""
         # antispam cache check and update
-        current_users_on_msg: set = self.bookmark_cache.get(message.id)
+        current_users_on_msg = self.bookmark_cache.get(message.id)
         if current_users_on_msg is not None:
             if payload.member.id in current_users_on_msg:
                 await utils.discord.remove_reaction(
                     message, payload.emoji, payload.member
                 )
                 return
-        else:
-            current_users_on_msg = set()
-        current_users_on_msg.add(payload.member.id)
+
+        current_users_on_msg = {payload.member.id}
         self.bookmark_cache.update({message.id: current_users_on_msg})
 
         bookmark = Bookmark.get(payload.guild_id, payload.channel_id)

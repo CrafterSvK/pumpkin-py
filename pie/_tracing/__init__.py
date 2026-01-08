@@ -1,5 +1,5 @@
 import os
-from typing import Callable
+from collections.abc import Callable
 
 
 def register(name: str) -> Callable:
@@ -46,7 +46,7 @@ def register(name: str) -> Callable:
         return lambda *args, **kwargs: None
 
     def _trace(message: str) -> None:
-        print("{prefix} {message}".format(prefix=prefix, message=message))
+        print(f"{prefix} {message}")
 
     _trace("Function registered.")
     return _trace

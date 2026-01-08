@@ -1,8 +1,8 @@
 import ring
 from pathlib import Path
-from typing import Dict, Optional, Union
 
 import discord
+from discord.ext.commands import Context
 
 from pie.database.config import Config
 from pie.i18n.database import GuildLanguage, MemberLanguage
@@ -24,7 +24,7 @@ class TranslationContext:
 
     __slots__ = ("guild_id", "user_id")
 
-    def __init__(self, guild_id: Optional[int], user_id: Optional[int]):
+    def __init__(self, guild_id: int | None, user_id: int | None):
         self.guild_id = guild_id
         self.user_id = user_id
 
@@ -49,17 +49,17 @@ class Translator:
     def __init__(self, dirname: str):
         self._dir = Path(dirname)
 
-        self.strings: Dict[str, Dict[str, Optional[str]]] = {}
+        self.strings: dict[str, dict[str, str]] = {}
         for language in LANGUAGES:
             pofile: Path = self._dir / "po" / f"{language}.popie"
             if not pofile.exists():
                 continue
             self.strings[language] = self.parse_po_file(pofile)
 
-    def parse_po_file(self, pofile: Path) -> Dict[str, str]:
+    def parse_po_file(self, pofile: Path) -> dict[str, str]:
         """Get translation dictionary from .po file."""
-        data: Dict[str, str] = {}
-        with open(pofile, "r") as handle:
+        data: dict[str, str] = {}
+        with open(pofile) as handle:
             for line in handle.readlines():
                 line = line.strip()
 
@@ -82,7 +82,7 @@ class Translator:
 
     def translate(
         self,
-        ctx: Union[discord.ext.commands.Context, TranslationContext],
+        ctx: Context | TranslationContext,
         string: str,
     ) -> str:
         """Get translation for requested key.
@@ -105,11 +105,9 @@ class Translator:
             return string
         if string not in self.strings[langcode].keys():
             return string
-        return self.strings[langcode][string]
+        return str(self.strings[langcode][string])
 
-    def get_language_preference(
-        self, ctx: Union[discord.ext.commands.Context, TranslationContext]
-    ) -> str:
+    def get_language_preference(self, ctx: Context | TranslationContext) -> str:
         """Get language for the string.
 
         Preference hierarchy:
@@ -118,15 +116,15 @@ class Translator:
         * Try to get guild information: if it has language preference, return it.
         * Return the bot default.
         """
-        guild_id: Optional[int]
-        user_id: Optional[int]
-        if ctx.__class__ == TranslationContext:
+        guild_id: int | None
+        user_id: int | None
+        if isinstance(ctx, TranslationContext):
             guild_id, user_id = ctx.guild_id, ctx.user_id
-        elif ctx.__class__ == discord.ext.commands.Context and isinstance(
+        elif isinstance(ctx, Context) and isinstance(
             ctx.channel, discord.abc.PrivateChannel
         ):
             guild_id, user_id = None, ctx.author.id
-        elif ctx.__class__ == discord.ext.commands.Context and not isinstance(
+        elif isinstance(ctx, Context) and not isinstance(
             ctx.channel, discord.abc.PrivateChannel
         ):
             guild_id, user_id = ctx.guild.id, ctx.author.id
@@ -134,12 +132,12 @@ class Translator:
             guild_id, user_id = None, None
 
         if guild_id is not None and user_id is not None:
-            user_language: Optional[str] = self._get_user_language(guild_id, user_id)
+            user_language: str | None = self._get_user_language(guild_id, user_id)
             if user_language is not None:
                 return user_language
 
         if guild_id is not None:
-            guild_language: Optional[str] = self._get_guild_language(guild_id)
+            guild_language: str | None = self._get_guild_language(guild_id)
             if guild_language is not None:
                 return guild_language
 
@@ -152,23 +150,26 @@ class Translator:
     # In case this expiration value gets changed you should also change
     # the text in the language module under '[caching]' section.
     @ring.lru(expire=120)
-    def _get_user_language(self, guild_id: int, user_id: int) -> Optional[str]:
+    def _get_user_language(self, guild_id: int, user_id: int) -> str | None:
         """Get user's language preference.
 
-        This value may be out-of-sync for two minues after change because of
+        This value may be out-of-sync for two minutes after change because of
         caching.
         """
         user = MemberLanguage.get(guild_id, user_id)
-        if getattr(user, "language", None) is not None:
+        if user and getattr(user, "language", None) is not None:
             return user.language
+        return None
 
     @ring.lru(expire=120)
-    def _get_guild_language(self, guild_id: int) -> Optional[str]:
+    def _get_guild_language(self, guild_id: int) -> str | None:
         """Get guild's language preference.
 
-        This value may be out-of-sync for two minues after change because of
+        This value may be out-of-sync for two minutes after change because of
         caching.
         """
         guild = GuildLanguage.get(guild_id)
-        if getattr(guild, "language", None) is not None:
+        if guild is not None and getattr(guild, "language", None) is not None:
             return guild.language
+
+        return None

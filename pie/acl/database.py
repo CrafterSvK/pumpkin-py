@@ -1,32 +1,33 @@
 from __future__ import annotations
 
 import enum
-from typing import Any, Dict, Optional, List
+from typing import Any
 
-from sqlalchemy import BigInteger, Boolean, Column, Enum, String, Integer
+from sqlalchemy import BigInteger, Boolean, Column, Enum
+from sqlalchemy.orm import Mapped, mapped_column
 
-from pie.database import database, session
+from pie.database import session, Base
 
 
 class ACLevel(enum.IntEnum):
-    BOT_OWNER: int = 5
-    GUILD_OWNER: int = 4
-    MOD: int = 3
-    SUBMOD: int = 2
-    MEMBER: int = 1
-    EVERYONE: int = 0
+    BOT_OWNER = 5
+    GUILD_OWNER = 4
+    MOD = 3
+    SUBMOD = 2
+    MEMBER = 1
+    EVERYONE = 0
 
 
-class ACDefault(database.base):
+class ACDefault(Base):
     __tablename__ = "pie_acl_acdefault"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    command = Column(String)
-    level = Column(Enum(ACLevel))
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    command: Mapped[str] = mapped_column()
+    level: Mapped[ACLevel] = mapped_column(Enum(ACLevel))
 
     @staticmethod
-    def add(guild_id: int, command: str, level: ACLevel) -> Optional[ACDefault]:
+    def add(guild_id: int, command: str, level: ACLevel) -> ACDefault | None:
         if ACDefault.get(guild_id, command):
             return None
 
@@ -36,7 +37,7 @@ class ACDefault(database.base):
         return default
 
     @staticmethod
-    def get(guild_id: int, command: str) -> Optional[ACDefault]:
+    def get(guild_id: int, command: str) -> ACDefault | None:
         default = (
             session.query(ACDefault)
             .filter_by(guild_id=guild_id, command=command)
@@ -45,7 +46,7 @@ class ACDefault(database.base):
         return default
 
     @staticmethod
-    def get_all(guild_id: int) -> List[ACDefault]:
+    def get_all(guild_id: int) -> list[ACDefault]:
         query = session.query(ACDefault).filter_by(guild_id=guild_id).all()
         return query
 
@@ -65,7 +66,7 @@ class ACDefault(database.base):
             + ">"
         )
 
-    def dump(self) -> Dict[str, Any]:
+    def dump(self) -> dict[str, Any]:
         return {
             "guild_id": self.guild_id,
             "command": self.command,
@@ -73,19 +74,19 @@ class ACDefault(database.base):
         }
 
 
-class RoleOverwrite(database.base):
+class RoleOverwrite(Base):
     __tablename__ = "pie_acl_role_overwrite"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    role_id = Column(BigInteger)
-    command = Column(String)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    role_id: Mapped[int] = mapped_column(BigInteger)
+    command: Mapped[str] = mapped_column()
     allow = Column(Boolean)
 
     @staticmethod
     def add(
         guild_id: int, role_id: int, command: str, allow: bool
-    ) -> Optional[RoleOverwrite]:
+    ) -> RoleOverwrite | None:
         if RoleOverwrite.get(guild_id, role_id, command):
             return None
         ro = RoleOverwrite(
@@ -96,7 +97,7 @@ class RoleOverwrite(database.base):
         return ro
 
     @staticmethod
-    def get(guild_id: int, role_id: int, command: str) -> Optional[RoleOverwrite]:
+    def get(guild_id: int, role_id: int, command: str) -> RoleOverwrite | None:
         ro = (
             session.query(RoleOverwrite)
             .filter_by(guild_id=guild_id, role_id=role_id, command=command)
@@ -105,7 +106,7 @@ class RoleOverwrite(database.base):
         return ro
 
     @staticmethod
-    def get_all(guild_id: int) -> List[RoleOverwrite]:
+    def get_all(guild_id: int) -> list[RoleOverwrite]:
         query = session.query(RoleOverwrite).filter_by(guild_id=guild_id).all()
         return query
 
@@ -125,7 +126,7 @@ class RoleOverwrite(database.base):
             + ">"
         )
 
-    def dump(self) -> Dict[str, Any]:
+    def dump(self) -> dict[str, Any]:
         return {
             "guild_id": self.guild_id,
             "role_id": self.role_id,
@@ -133,19 +134,19 @@ class RoleOverwrite(database.base):
         }
 
 
-class UserOverwrite(database.base):
+class UserOverwrite(Base):
     __tablename__ = "pie_acl_user_overwrite"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    user_id = Column(BigInteger)
-    command = Column(String)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    user_id: Mapped[int] = mapped_column(BigInteger)
+    command: Mapped[str] = mapped_column()
     allow = Column(Boolean)
 
     @staticmethod
     def add(
         guild_id: int, user_id: int, command: str, allow: bool
-    ) -> Optional[UserOverwrite]:
+    ) -> UserOverwrite | None:
         if UserOverwrite.get(guild_id, user_id, command):
             return None
         uo = UserOverwrite(
@@ -156,7 +157,7 @@ class UserOverwrite(database.base):
         return uo
 
     @staticmethod
-    def get(guild_id: int, user_id: int, command: str) -> Optional[UserOverwrite]:
+    def get(guild_id: int, user_id: int, command: str) -> UserOverwrite | None:
         uo = (
             session.query(UserOverwrite)
             .filter_by(guild_id=guild_id, user_id=user_id, command=command)
@@ -165,7 +166,7 @@ class UserOverwrite(database.base):
         return uo
 
     @staticmethod
-    def get_all(guild_id: int) -> List[UserOverwrite]:
+    def get_all(guild_id: int) -> list[UserOverwrite]:
         query = session.query(UserOverwrite).filter_by(guild_id=guild_id).all()
         return query
 
@@ -185,7 +186,7 @@ class UserOverwrite(database.base):
             + ">"
         )
 
-    def dump(self) -> Dict[str, Any]:
+    def dump(self) -> dict[str, Any]:
         return {
             "guild_id": self.guild_id,
             "user_id": self.user_id,
@@ -193,19 +194,19 @@ class UserOverwrite(database.base):
         }
 
 
-class ChannelOverwrite(database.base):
+class ChannelOverwrite(Base):
     __tablename__ = "pie_acl_channel_overwrite"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    channel_id = Column(BigInteger)
-    command = Column(String)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    channel_id: Mapped[int] = mapped_column(BigInteger)
+    command: Mapped[str] = mapped_column()
     allow = Column(Boolean)
 
     @staticmethod
     def add(
         guild_id: int, channel_id: int, command: str, allow: bool
-    ) -> Optional[ChannelOverwrite]:
+    ) -> ChannelOverwrite | None:
         if ChannelOverwrite.get(guild_id, channel_id, command):
             return None
         co = ChannelOverwrite(
@@ -216,7 +217,7 @@ class ChannelOverwrite(database.base):
         return co
 
     @staticmethod
-    def get(guild_id: int, channel_id: int, command: str) -> Optional[ChannelOverwrite]:
+    def get(guild_id: int, channel_id: int, command: str) -> ChannelOverwrite | None:
         co = (
             session.query(ChannelOverwrite)
             .filter_by(guild_id=guild_id, channel_id=channel_id, command=command)
@@ -225,7 +226,7 @@ class ChannelOverwrite(database.base):
         return co
 
     @staticmethod
-    def get_all(guild_id: int) -> List[ChannelOverwrite]:
+    def get_all(guild_id: int) -> list[ChannelOverwrite]:
         query = session.query(ChannelOverwrite).filter_by(guild_id=guild_id).all()
         return query
 
@@ -245,7 +246,7 @@ class ChannelOverwrite(database.base):
             + ">"
         )
 
-    def dump(self) -> Dict[str, Any]:
+    def dump(self) -> dict[str, Any]:
         return {
             "guild_id": self.guild_id,
             "channel_id": self.channel_id,
@@ -253,15 +254,16 @@ class ChannelOverwrite(database.base):
         }
 
 
-class ACLevelMappping(database.base):
+class ACLevelMappping(Base):
     __tablename__ = "pie_acl_aclevel_mapping"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    role_id = Column(BigInteger)
-    level = Column(Enum(ACLevel))
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    role_id: Mapped[int] = mapped_column(BigInteger)
+    level: Mapped[ACLevel] = mapped_column(Enum(ACLevel))
 
-    def add(guild_id: int, role_id: int, level: ACLevel) -> Optional[ACLevelMappping]:
+    @staticmethod
+    def add(guild_id: int, role_id: int, level: ACLevel) -> ACLevelMappping | None:
         if ACLevelMappping.get(guild_id, role_id):
             return None
         m = ACLevelMappping(guild_id=guild_id, role_id=role_id, level=level)
@@ -269,7 +271,8 @@ class ACLevelMappping(database.base):
         session.commit()
         return m
 
-    def get(guild_id: int, role_id: int) -> Optional[ACLevelMappping]:
+    @staticmethod
+    def get(guild_id: int, role_id: int) -> ACLevelMappping | None:
         m = (
             session.query(ACLevelMappping)
             .filter_by(guild_id=guild_id, role_id=role_id)
@@ -277,10 +280,12 @@ class ACLevelMappping(database.base):
         )
         return m
 
-    def get_all(guild_id: int) -> List[ACLevelMappping]:
+    @staticmethod
+    def get_all(guild_id: int) -> list[ACLevelMappping]:
         m = session.query(ACLevelMappping).filter_by(guild_id=guild_id).all()
         return m
 
+    @staticmethod
     def remove(guild_id: int, role_id: int) -> bool:
         query = (
             session.query(ACLevelMappping)
@@ -296,7 +301,7 @@ class ACLevelMappping(database.base):
             f"level='{self.level.name}'>"
         )
 
-    def dump(self) -> Dict[str, Any]:
+    def dump(self) -> dict[str, Any]:
         return {
             "guild_id": self.guild_id,
             "role_id": self.role_id,

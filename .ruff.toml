@@ -1,0 +1,36 @@
+target-version = "py311"
+line-length = 90
+
+[lint]
+select = [
+    "C",
+    "E",
+    "W",
+    "F",
+    "B",
+    "UP"
+]
+
+ignore = [
+    "E203",
+    "E501",
+]
+
+exclude = [
+    ".venv",
+]
+
+[lint.per-file-ignores]
+"pumpkin.py" = ["E402"]
+"pie/__init__.py" = ["F401"]
+"pie/check.py" = ["F401"]
+"pie/utils/__init__.py" = ["F401"]
+"modules/base/errors/module.py" = ["C901"]
+
+[lint.mccabe]
+max-complexity = 25
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"

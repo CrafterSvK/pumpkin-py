@@ -1,31 +1,35 @@
 from __future__ import annotations
-from typing import Dict, Union, List, Optional
 
-from sqlalchemy import BigInteger, Boolean, Column, Integer, UniqueConstraint
+from typing import Any
 
-from pie.database import database, session
+from sqlalchemy import BigInteger, UniqueConstraint
+from sqlalchemy.orm import mapped_column, Mapped
+
+from pie.database import session, Base
 
 
-class SpamChannel(database.base):
+class SpamChannel(Base):
     __tablename__ = "spamchannels"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    channel_id = Column(BigInteger)
-    primary = Column(Boolean, default=False)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    channel_id: Mapped[int] = mapped_column(BigInteger)
+    primary: Mapped[bool] = mapped_column(default=False)
 
     __table_args__ = (
         UniqueConstraint(guild_id, channel_id),
         UniqueConstraint(channel_id, primary),
     )
 
+    @staticmethod
     def add(guild_id: int, channel_id: int) -> SpamChannel:
         channel = SpamChannel(guild_id=guild_id, channel_id=channel_id)
         session.add(channel)
         session.commit()
         return channel
 
-    def get(guild_id: int, channel_id: int) -> Optional[SpamChannel]:
+    @staticmethod
+    def get(guild_id: int, channel_id: int) -> SpamChannel | None:
         query = (
             session.query(SpamChannel)
             .filter_by(guild_id=guild_id, channel_id=channel_id)
@@ -33,11 +37,13 @@ class SpamChannel(database.base):
         )
         return query
 
-    def get_all(guild_id: int) -> List[SpamChannel]:
+    @staticmethod
+    def get_all(guild_id: int) -> list[SpamChannel]:
         query = session.query(SpamChannel).filter_by(guild_id=guild_id).all()
         return query
 
-    def set_primary(guild_id: int, channel_id: int) -> Optional[SpamChannel]:
+    @staticmethod
+    def set_primary(guild_id: int, channel_id: int) -> SpamChannel | None:
         query = (
             session.query(SpamChannel)
             .filter_by(guild_id=guild_id, primary=True)
@@ -55,6 +61,7 @@ class SpamChannel(database.base):
         session.commit()
         return query
 
+    @staticmethod
     def remove(guild_id: int, channel_id):
         query = (
             session.query(SpamChannel)
@@ -71,7 +78,7 @@ class SpamChannel(database.base):
             f'primary="{self.primary}">'
         )
 
-    def dump(self) -> Dict[str, Union[int, str]]:
+    def dump(self) -> dict[str, Any]:
         return {
             "guild_id": self.guild_id,
             "channel_id": self.channel_id,

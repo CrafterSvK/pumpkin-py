@@ -1,12 +1,12 @@
 from __future__ import annotations
-from typing import Dict, Optional, Union
 
-from sqlalchemy import BigInteger, Column, Integer, String
+from sqlalchemy import BigInteger
+from sqlalchemy.orm import Mapped, mapped_column
 
-from pie.database import database, session
+from pie.database import session, Base
 
 
-class GuildLanguage(database.base):
+class GuildLanguage(Base):
     """Language preference for the guild.
 
     .. note::
@@ -17,9 +17,9 @@ class GuildLanguage(database.base):
 
     __tablename__ = "language_guilds"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger, unique=True)
-    language = Column(String)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger, unique=True)
+    language: Mapped[str] = mapped_column()
 
     def __repr__(self) -> str:
         return (
@@ -30,7 +30,7 @@ class GuildLanguage(database.base):
     def __eq__(self, obj) -> bool:
         return type(self) is type(obj) and self.guild_id == obj.guild_id
 
-    def dump(self) -> Dict[str, Union[int, str]]:
+    def dump(self) -> dict[str, int | str]:
         return {
             "guild_id": self.guild_id,
             "language": self.language,
@@ -56,7 +56,7 @@ class GuildLanguage(database.base):
         return preference
 
     @staticmethod
-    def get(guild_id: int) -> Optional[GuildLanguage]:
+    def get(guild_id: int) -> GuildLanguage | None:
         """Get guild language preference.
 
         :param guild_id: Guild ID.
@@ -77,7 +77,7 @@ class GuildLanguage(database.base):
         return query
 
 
-class MemberLanguage(database.base):
+class MemberLanguage(Base):
     """Language preference of the user.
 
     .. note::
@@ -88,10 +88,10 @@ class MemberLanguage(database.base):
 
     __tablename__ = "language_members"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    member_id = Column(BigInteger)
-    language = Column(String)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    member_id: Mapped[int] = mapped_column(BigInteger)
+    language: Mapped[str] = mapped_column()
 
     def __repr__(self) -> str:
         return (
@@ -106,7 +106,7 @@ class MemberLanguage(database.base):
             and self.member_id == obj.member_id
         )
 
-    def dump(self) -> Dict[str, Union[int, str]]:
+    def dump(self) -> dict[str, int | str]:
         return {
             "guild_id": self.guild_id,
             "member_id": self.member_id,
@@ -137,7 +137,7 @@ class MemberLanguage(database.base):
         return preference
 
     @staticmethod
-    def get(guild_id: int, member_id: int) -> Optional[MemberLanguage]:
+    def get(guild_id: int, member_id: int) -> MemberLanguage | None:
         """Get member language preference.
 
         :param guild_id: Guild ID.

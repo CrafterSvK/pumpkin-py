@@ -21,7 +21,7 @@ class BaseInfo(commands.Cog):
     @commands.hybrid_command()
     async def ping(self, ctx):
         """Return latency information."""
-        delay: str = "{:.2f}".format(self.bot.latency)
+        delay: str = f"{self.bot.latency:.2f}"
         await ctx.reply(_(ctx, "Pong: **{delay}** 🏓").format(delay=delay))
 
     @check.acl2(check.ACLevel.EVERYONE)

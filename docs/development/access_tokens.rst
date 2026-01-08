@@ -14,14 +14,14 @@ To create a new personal access token visit https://github.com/settings/personal
 
 Set a desired token name and expiration date (maximum is 1 year from the day you created the token) and description if necessary.
 
-In the *Repository access* section, it is recommended to set *Only select repositories* 
+In the *Repository access* section, it is recommended to set *Only select repositories*
 and select the repositories that you want to expose using this token. It is recommended
 to expose as few as possible, preferably one per token.
 
 In the *Permissions* section, click on *Repository permissions* and set the *Contents* key to *Read-only*.
 This will also set the Metadata key to *Read-only* automatically.
 
-Scroll down and click the *Generate token* button. You will then be presented with the generated token 
+Scroll down and click the *Generate token* button. You will then be presented with the generated token
 which is the only time you will be able to see it so copy it and you can use it afterwards.
 
 Using Tokens

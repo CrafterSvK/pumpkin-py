@@ -106,15 +106,15 @@ An example database file ``bistro/database.py`` may look like this:
 
     from sqlalchemy import Column, Integer, BigInteger, String
 
-    from pie.database import database, session
+    from pie.database import Base, session
 
-    class Item(database.base):
+    class Item(Base):
         __tablename__ = "bistro_bistro_item"
 
-        idx = Column(Integer, primary_key=True)
-        guild_id = Column(BigInteger)
-        name = Column(String)
-        description = Column(String)
+        idx: Mapped[int] = mapped_column(primary_key=True)
+        guild_id: Mapped[int] = mapped_column(BigInteger)
+        name: Mapped[str] = mapped_column()
+        description: Mapped[str] = mapped_column()
 
         @classmethod
         def add(cls, guild_id: int, name: str, description: str) -> Item:

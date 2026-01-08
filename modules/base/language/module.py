@@ -1,6 +1,5 @@
 import operator
 from pathlib import Path
-from typing import Dict, Tuple
 
 from discord.ext import commands
 
@@ -136,9 +135,7 @@ class Language(commands.Cog):
         if ok == 0:
             await ctx.reply(_(ctx, "This server doesn't have any language preference."))
             return
-        await guild_log.info(
-            ctx.author, ctx.channel, "Guild language preference unset."
-        )
+        await guild_log.info(ctx.author, ctx.channel, "Guild language preference unset.")
         await ctx.reply(
             _(ctx, "I'll be using the global settings from now on.")
             + " "
@@ -149,7 +146,7 @@ class Language(commands.Cog):
     @language_.command(name="audit")
     async def language_audit(self, ctx):
         """Display information about translation coverage."""
-        statistics: Dict[str, Dict[str, Tuple[int, int]]] = {}
+        statistics: dict[str, dict[str, tuple[int, int]]] = {}
 
         modules_root = Path(".").resolve() / "modules/"
         for module_dir in modules_root.iterdir():
@@ -175,13 +172,12 @@ class Language(commands.Cog):
 
                 statistics[module_dir.name][po_file.stem] = (msgid, msgstr)
 
-        statistics = {
-            k: v
-            for k, v in sorted(
+        statistics = dict(
+            sorted(
                 statistics.items(),
                 key=operator.itemgetter(0),
             )
-        }
+        )
 
         embed = utils.discord.create_embed(
             author=ctx.author,

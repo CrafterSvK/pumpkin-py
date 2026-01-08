@@ -1,5 +1,4 @@
 from operator import attrgetter
-from typing import List
 
 import discord
 from discord.ext import commands
@@ -56,7 +55,7 @@ class ACL(commands.Cog):
         mappings = sorted(mappings, key=lambda m: m.level.name)[::-1]
         items = [Item(mapping) for mapping in mappings]
 
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             items,
             header={
                 "role": _(ctx, "Role"),
@@ -72,7 +71,7 @@ class ACL(commands.Cog):
     async def acl_mapping_add(self, ctx, role: discord.Role, level: str):
         """Add ACL level to role mappings."""
         try:
-            level: ACLevel = ACLevel[level]
+            ac_level: ACLevel = ACLevel[level]
         except KeyError:
             await ctx.reply(
                 _(ctx, "Invalid level. Possible options are: {keys}.").format(
@@ -80,31 +79,31 @@ class ACL(commands.Cog):
                 )
             )
             return
-        if level in (ACLevel.BOT_OWNER, ACLevel.GUILD_OWNER):
+        if ac_level in (ACLevel.BOT_OWNER, ACLevel.GUILD_OWNER):
             await ctx.reply(_(ctx, "You can't assign OWNER levels."))
             return
-        if level >= pie.acl.map_member_to_ACLevel(bot=self.bot, member=ctx.author):
+        if ac_level >= pie.acl.map_member_to_ACLevel(bot=self.bot, member=ctx.author):
             await ctx.reply(
                 _(ctx, "Your ACLevel has to be higher than **{level}**.").format(
-                    level=level.name
+                    level=ac_level.name
                 )
             )
             return
 
-        m = ACLevelMappping.add(ctx.guild.id, role.id, level)
+        m = ACLevelMappping.add(ctx.guild.id, role.id, ac_level)
         if m is None:
             await ctx.reply(_(ctx, "That role is already mapped to some level."))
             return
 
         await ctx.reply(
             _(ctx, "Role **{role}** will be mapped to **{level}**.").format(
-                role=role.name, level=level.name
+                role=role.name, level=ac_level.name
             )
         )
         await guild_log.info(
             ctx.author,
             ctx.channel,
-            f"New ACLevel mapping for role '{role.name}' set to level '{level.name}'.",
+            f"New ACLevel mapping for role '{role.name}' set to level '{ac_level.name}'.",
         )
 
     @check.acl2(check.ACLevel.GUILD_OWNER)
@@ -116,9 +115,7 @@ class ACL(commands.Cog):
             await ctx.reply(_(ctx, "That role is not mapped to any level."))
             return
 
-        if mapped.level >= pie.acl.map_member_to_ACLevel(
-            bot=self.bot, member=ctx.author
-        ):
+        if mapped.level >= pie.acl.map_member_to_ACLevel(bot=self.bot, member=ctx.author):
             await ctx.reply(
                 _(ctx, "Your ACLevel has to be higher than **{level}**.").format(
                     level=mapped.level.name
@@ -163,7 +160,7 @@ class ACL(commands.Cog):
         defaults = sorted(defaults, key=lambda d: d.command)[::-1]
         items = [Item(self.bot, default) for default in defaults]
 
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             items,
             header={
                 "command": _(ctx, "Command"),
@@ -183,7 +180,7 @@ class ACL(commands.Cog):
         You can only constraint commands that you are currently able to invoke.
         """
         try:
-            level: ACLevel = ACLevel[level]
+            ac_level: ACLevel = ACLevel[level]
         except KeyError:
             await ctx.reply(
                 _(ctx, "Invalid level. Possible options are: {keys}.").format(
@@ -210,9 +207,7 @@ class ACL(commands.Cog):
             )
             return
 
-        if command_level > pie.acl.map_member_to_ACLevel(
-            bot=self.bot, member=ctx.author
-        ):
+        if command_level > pie.acl.map_member_to_ACLevel(bot=self.bot, member=ctx.author):
             await ctx.reply(
                 _(ctx, "Command's ACLevel is higher than your current ACLevel.")
             )
@@ -220,7 +215,7 @@ class ACL(commands.Cog):
 
         # Add the overwrite
 
-        default = ACDefault.add(ctx.guild.id, command, level)
+        default = ACDefault.add(ctx.guild.id, command, ac_level)
         if default is None:
             await ctx.reply(
                 _(ctx, "Custom default for **{command}** already exists.").format(
@@ -235,7 +230,7 @@ class ACL(commands.Cog):
         await guild_log.info(
             ctx.author,
             ctx.channel,
-            f"ACLevel default for '{command}' set to '{level.name}'.",
+            f"ACLevel default for '{command}' set to '{ac_level.name}'.",
         )
 
     @check.acl2(check.ACLevel.GUILD_OWNER)
@@ -276,8 +271,8 @@ class ACL(commands.Cog):
     @acl_default_.command("audit")
     async def acl_default_audit(self, ctx, *, query: str = ""):
         """Display all bot commands and their defaults."""
-        bot_commands = [c for c in self.bot.walk_commands()]
-        if len(query):
+        bot_commands = list(self.bot.walk_commands())
+        if query:
             bot_commands = [c for c in bot_commands if query in c.qualified_name]
         bot_commands = sorted(bot_commands, key=lambda c: c.qualified_name)
 
@@ -300,7 +295,7 @@ class ACL(commands.Cog):
         # put commands with overwrites first
         items = sorted(items, key=lambda item: item.db_level, reverse=True)
 
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             items,
             header={
                 "command": _(ctx, "Command"),
@@ -354,9 +349,7 @@ class ACL(commands.Cog):
                 self.allow = _(ctx, "yes") if obj.allow else _(ctx, "no")
 
         items = (
-            [Item(ro) for ro in ros]
-            + [Item(co) for co in cos]
-            + [Item(uo) for uo in uos]
+            [Item(ro) for ro in ros] + [Item(co) for co in cos] + [Item(uo) for uo in uos]
         )
 
         if not items:
@@ -366,7 +359,7 @@ class ACL(commands.Cog):
         # sorting priority: type, command, value
         items = sorted(items, key=attrgetter("value", "command", "overwrite"))
 
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             items,
             header={
                 "overwrite": _(ctx, "Overwrite type"),
@@ -436,9 +429,7 @@ class ACL(commands.Cog):
         """Remove ACL role overwrite."""
         removed = RoleOverwrite.remove(ctx.guild.id, role.id, command)
         if not removed:
-            await ctx.reply(
-                _(ctx, "Overwrite for this command and role does not exist.")
-            )
+            await ctx.reply(_(ctx, "Overwrite for this command and role does not exist."))
             return
 
         if not pie.acl.can_invoke_command(self.bot, ctx, command):
@@ -486,7 +477,7 @@ class ACL(commands.Cog):
         # sorting priority: command, role
         items = sorted(items, key=attrgetter("role", "command"))
 
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             items,
             header={
                 "command": _(ctx, "Command"),
@@ -555,9 +546,7 @@ class ACL(commands.Cog):
         """Remove ACL user overwrite."""
         removed = UserOverwrite.remove(ctx.guild.id, user.id, command)
         if not removed:
-            await ctx.reply(
-                _(ctx, "Overwrite for this command and user does not exist.")
-            )
+            await ctx.reply(_(ctx, "Overwrite for this command and user does not exist."))
             return
 
         if not pie.acl.can_invoke_command(self.bot, ctx, command):
@@ -610,7 +599,7 @@ class ACL(commands.Cog):
         # sorting priority: command, user
         items = sorted(items, key=attrgetter("user", "command"))
 
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             items,
             header={
                 "command": _(ctx, "Command"),
@@ -731,7 +720,7 @@ class ACL(commands.Cog):
         # sorting priority: command, channel
         items = sorted(items, key=attrgetter("channel", "command"))
 
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             items,
             header={
                 "command": _(ctx, "Command"),
@@ -746,7 +735,7 @@ class ACL(commands.Cog):
     #
 
     @property
-    def _all_bot_commands(self) -> List[str]:
+    def _all_bot_commands(self) -> list[str]:
         """Return list of registered commands"""
         result = []
         for command in self.bot.walk_commands():

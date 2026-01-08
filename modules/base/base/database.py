@@ -1,22 +1,23 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import cast
 
-from sqlalchemy import BigInteger, Boolean, Column, Integer
+from sqlalchemy import BigInteger, select, delete, CursorResult
+from sqlalchemy.orm import Mapped, mapped_column
 
-from pie.database import database, session
+from pie.database import session, Base
 
 
-class UserPin(database.base):
+class UserPin(Base):
     __tablename__ = "base_base_userpin"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    channel_id = Column(BigInteger, default=None)
-    limit = Column(Integer, default=0)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    channel_id: Mapped[int | None] = mapped_column(BigInteger, default=None)
+    limit: Mapped[int] = mapped_column(default=0)
 
     @staticmethod
-    def add(guild_id: int, channel_id: Optional[int], limit: int = 0) -> UserPin:
+    def add(guild_id: int, channel_id: int | None, limit: int = 0) -> UserPin:
         """Add userpin preference."""
         if UserPin.get(guild_id, channel_id) is not None:
             UserPin.remove(guild_id, channel_id)
@@ -26,28 +27,34 @@ class UserPin(database.base):
         return query
 
     @staticmethod
-    def get(guild_id: int, channel_id: Optional[int]) -> Optional[UserPin]:
+    def get(guild_id: int, channel_id: int | None) -> UserPin | None:
         """Get userpin preferences for the guild."""
-        query = (
-            session.query(UserPin)
-            .filter_by(guild_id=guild_id, channel_id=channel_id)
-            .one_or_none()
-        )
-        return query
+        user_pin = session.execute(
+            select(UserPin)
+            .where(UserPin.guild_id == guild_id)
+            .where(UserPin.channel_id == channel_id)
+        ).scalar_one_or_none()
+        return user_pin
 
     @staticmethod
-    def get_all(guild_id: int) -> List[UserPin]:
-        query = session.query(UserPin).filter_by(guild_id=guild_id).all()
-        return query
+    def get_all(guild_id: int) -> list[UserPin]:
+        user_pins = (
+            session.execute(select(UserPin).where(UserPin.guild_id == guild_id))
+            .scalars()
+            .all()
+        )
+
+        return cast(list[UserPin], user_pins)
 
     @staticmethod
-    def remove(guild_id: int, channel_id: Optional[int]) -> int:
-        query = (
-            session.query(UserPin)
-            .filter_by(guild_id=guild_id, channel_id=channel_id)
-            .delete()
+    def remove(guild_id: int, channel_id: int | None) -> int:
+        result = session.execute(
+            delete(UserPin)
+            .where(UserPin.guild_id == guild_id)
+            .where(UserPin.channel_id == channel_id)
         )
-        return query
+        session.commit()
+        return cast(CursorResult, result).rowcount
 
     def __repr__(self) -> str:
         return (
@@ -63,47 +70,52 @@ class UserPin(database.base):
         }
 
 
-class UserThread(database.base):
+class UserThread(Base):
     __tablename__ = "base_base_userthread"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    channel_id = Column(BigInteger, default=None)
-    limit = Column(Integer, default=0)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    channel_id: Mapped[int | None] = mapped_column(BigInteger, default=None)
+    limit: Mapped[int] = mapped_column(default=0)
 
     @staticmethod
-    def add(guild_id: int, channel_id: Optional[int], limit: int = 0) -> UserThread:
+    def add(guild_id: int, channel_id: int | None, limit: int = 0) -> UserThread:
         """Add userthread preference."""
         if UserThread.get(guild_id, channel_id) is not None:
             UserThread.remove(guild_id, channel_id)
-        query = UserThread(guild_id=guild_id, channel_id=channel_id, limit=limit)
-        session.add(query)
+        user_thread = UserThread(guild_id=guild_id, channel_id=channel_id, limit=limit)
+        session.add(user_thread)
         session.commit()
-        return query
+        return user_thread
 
     @staticmethod
-    def get(guild_id: int, channel_id: Optional[int]) -> Optional[UserThread]:
+    def get(guild_id: int, channel_id: int | None) -> UserThread | None:
         """Get userthread preference for the guild."""
-        query = (
-            session.query(UserThread)
-            .filter_by(guild_id=guild_id, channel_id=channel_id)
-            .one_or_none()
-        )
-        return query
+        result = session.execute(
+            select(UserThread)
+            .where(UserThread.guild_id == guild_id)
+            .where(UserThread.channel_id == channel_id)
+        ).scalar_one_or_none()
+        return result
 
     @staticmethod
-    def get_all(guild_id: int) -> List[UserThread]:
-        query = session.query(UserThread).filter_by(guild_id=guild_id).all()
-        return query
+    def get_all(guild_id: int) -> list[UserThread]:
+        user_threads = (
+            session.execute(select(UserThread).where(UserThread.guild_id == guild_id))
+            .scalars()
+            .all()
+        )
+        return cast(list[UserThread], user_threads)
 
     @staticmethod
-    def remove(guild_id: int, channel_id: Optional[int]) -> int:
-        query = (
-            session.query(UserThread)
-            .filter_by(guild_id=guild_id, channel_id=channel_id)
-            .delete()
+    def remove(guild_id: int, channel_id: int | None) -> int:
+        result = session.execute(
+            delete(UserThread)
+            .where(UserThread.guild_id == guild_id)
+            .where(UserThread.channel_id == channel_id)
         )
-        return query
+        session.commit()
+        return cast(CursorResult, result).rowcount
 
     def __repr__(self) -> str:
         return (
@@ -119,18 +131,16 @@ class UserThread(database.base):
         }
 
 
-class Bookmark(database.base):
+class Bookmark(Base):
     __tablename__ = "base_base_bookmarks"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    channel_id = Column(BigInteger, default=None)
-    enabled = Column(Boolean, default=False)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    channel_id: Mapped[int | None] = mapped_column(BigInteger, default=None)
+    enabled: Mapped[bool] = mapped_column(default=False)
 
     @staticmethod
-    def add(
-        guild_id: int, channel_id: Optional[int], enabled: bool = False
-    ) -> Bookmark:
+    def add(guild_id: int, channel_id: int | None, enabled: bool = False) -> Bookmark:
         if Bookmark.get(guild_id, channel_id) is not None:
             Bookmark.remove(guild_id, channel_id)
         query = Bookmark(guild_id=guild_id, channel_id=channel_id, enabled=enabled)
@@ -139,27 +149,32 @@ class Bookmark(database.base):
         return query
 
     @staticmethod
-    def get(guild_id: int, channel_id: Optional[int]) -> Optional[Bookmark]:
-        query = (
-            session.query(Bookmark)
-            .filter_by(guild_id=guild_id, channel_id=channel_id)
-            .one_or_none()
-        )
-        return query
+    def get(guild_id: int, channel_id: int | None) -> Bookmark | None:
+        result = session.execute(
+            select(Bookmark)
+            .where(Bookmark.guild_id == guild_id)
+            .where(Bookmark.channel_id == channel_id)
+        ).scalar_one_or_none()
+        return result
 
     @staticmethod
-    def get_all(guild_id: int) -> List[Bookmark]:
-        query = session.query(Bookmark).filter_by(guild_id=guild_id).all()
-        return query
+    def get_all(guild_id: int) -> list[Bookmark]:
+        result = (
+            session.execute(select(Bookmark).where(Bookmark.guild_id == guild_id))
+            .scalars()
+            .all()
+        )
+        return cast(list[Bookmark], result)
 
     @staticmethod
-    def remove(guild_id: int, channel_id: Optional[int]) -> int:
-        query = (
-            session.query(Bookmark)
-            .filter_by(guild_id=guild_id, channel_id=channel_id)
-            .delete()
+    def remove(guild_id: int, channel_id: int | None) -> int:
+        result = session.execute(
+            delete(Bookmark)
+            .where(Bookmark.guild_id == guild_id)
+            .where(Bookmark.channel_id == channel_id)
         )
-        return query
+        session.commit()
+        return cast(CursorResult, result).rowcount
 
     def __repr__(self) -> str:
         return (
@@ -175,13 +190,13 @@ class Bookmark(database.base):
         }
 
 
-class AutoThread(database.base):
+class AutoThread(Base):
     __tablename__ = "base_base_autothread"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    channel_id = Column(BigInteger)
-    duration = Column(Integer)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    channel_id: Mapped[int] = mapped_column(BigInteger)
+    duration: Mapped[int] = mapped_column()
 
     @staticmethod
     def add(guild_id: int, channel_id: int, duration: int) -> AutoThread:
@@ -197,27 +212,32 @@ class AutoThread(database.base):
         return query
 
     @staticmethod
-    def get(guild_id: int, channel_id: int) -> Optional[AutoThread]:
-        query = (
-            session.query(AutoThread)
-            .filter_by(guild_id=guild_id, channel_id=channel_id)
-            .one_or_none()
-        )
-        return query
+    def get(guild_id: int, channel_id: int) -> AutoThread | None:
+        result = session.execute(
+            select(AutoThread)
+            .where(AutoThread.guild_id == guild_id)
+            .where(AutoThread.channel_id == channel_id)
+        ).scalar_one_or_none()
+        return result
 
     @staticmethod
-    def get_all(guild_id: int) -> List[AutoThread]:
-        query = session.query(AutoThread).filter_by(guild_id=guild_id).all()
-        return query
+    def get_all(guild_id: int) -> list[AutoThread]:
+        result = (
+            session.execute(select(AutoThread).where(AutoThread.guild_id == guild_id))
+            .scalars()
+            .all()
+        )
+        return cast(list[AutoThread], result)
 
     @staticmethod
     def remove(guild_id: int, channel_id: int) -> int:
-        query = (
-            session.query(AutoThread)
-            .filter_by(guild_id=guild_id, channel_id=channel_id)
-            .delete()
+        result = session.execute(
+            delete(AutoThread)
+            .where(AutoThread.guild_id == guild_id)
+            .where(AutoThread.channel_id == channel_id)
         )
-        return query
+        session.commit()
+        return cast(CursorResult, result).rowcount
 
     def __repr__(self) -> str:
         return (

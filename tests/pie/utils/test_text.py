@@ -1,5 +1,3 @@
-from typing import List
-
 from pie import utils
 
 
@@ -14,9 +12,7 @@ def test_text_split():
 
 
 def test_text_split_lines():
-    assert ["ab\ncd", "ef\ng"] == utils.text.split_lines(
-        ["ab", "cd", "ef", "g"], limit=5
-    )
+    assert ["ab\ncd", "ef\ng"] == utils.text.split_lines(["ab", "cd", "ef", "g"], limit=5)
     assert ["abc\ndef", "g"] == utils.text.split_lines(["abc", "def", "g"], limit=7)
 
 
@@ -34,12 +30,7 @@ def test_text_create_table():
         "a": "Integer",
         "b": "String",
     }
-    expected = (
-        "Integer    String\n"
-        "1          a\n"
-        "123456789  b\n"
-        "3          abcdefghijk\n"
-    )
+    expected = "Integer    String\n1          a\n123456789  b\n3          abcdefghijk\n"
     table: str = utils.text.create_table(iterable, header, rich=False)
     assert [expected] == table
 
@@ -59,7 +50,7 @@ def test_text_create_table_noattr():
         "a": "int",
         "b": "str",
     }
-    expected = "int  str\n" "1    a\n" "2\n" "3    c\n"
+    expected = "int  str\n1    a\n2\n3    c\n"
     table: str = utils.text.create_table(iterable, header, rich=False)
     assert [expected] == table
 
@@ -78,9 +69,9 @@ def test_text_create_table_wrapped():
         "a": "Integer",
         "b": "String",
     }
-    page_1 = "Integer  String\n" "1111     aaaa\n"
+    page_1 = "Integer  String\n1111     aaaa\n"
     page_2 = "2222     bbbb\n"
-    table: List[str] = utils.text.create_table(iterable, header, limit=32, rich=False)
+    table: list[str] = utils.text.create_table(iterable, header, limit=32, rich=False)
     assert [page_1, page_2] == table
 
 

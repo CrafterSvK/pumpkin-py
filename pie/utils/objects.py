@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 from abc import ABCMeta, abstractmethod
-from typing import Iterable, Optional, Union
+from collections.abc import Iterable
 
 import discord
 from discord.ext import commands
@@ -30,15 +30,15 @@ class ScrollableEmbed(discord.ui.View):
     def __init__(
         self,
         ctx: commands.Context,
-        iterable: Iterable[discord.Embed],
+        iterable: list[discord.Embed],
         timeout: int = 300,
         delete_message: bool = False,
         locked: bool = False,
         as_reply: bool = True,
-    ) -> ScrollableEmbed:
+    ):
         super().__init__(timeout=timeout)
-        self.pages: Iterable[discord.Embed] = self._pages_from_iter(ctx, iterable)
-        self.ctx: commands.Context = ctx
+        self.pages = self._pages_from_iter(ctx, iterable)
+        self.ctx = ctx
         self.pagenum: int = 0
         self.delete_message: bool = delete_message
         self.locked: bool = locked
@@ -81,7 +81,7 @@ class ScrollableEmbed(discord.ui.View):
         )
 
     def _pages_from_iter(
-        self, ctx: commands.Context, iterable: Iterable[discord.Embed]
+        self, ctx: commands.Context, iterable: list[discord.Embed]
     ) -> list[discord.Embed]:
         pages = []
         for idx, embed in enumerate(iterable):
@@ -89,7 +89,7 @@ class ScrollableEmbed(discord.ui.View):
                 raise ValueError("Items in iterable must be of type discord.Embed")
             embed.add_field(
                 name=_(ctx, "Page"),
-                value="{curr}/{total}".format(curr=idx + 1, total=len(iterable)),
+                value=f"{idx + 1}/{len(iterable)}",
                 inline=False,
             )
             pages.append(embed)
@@ -123,7 +123,7 @@ class ScrollableEmbed(discord.ui.View):
         Sends the first page to the context.
         """
         ctx = self.ctx
-        if self.pages == []:
+        if not self.pages:
             self.clear_items()
             await ctx.reply(_(ctx, "No results were found."))
             self.stop()
@@ -234,11 +234,11 @@ class ConfirmView(discord.ui.View):
         self,
         ctx: commands.Context,
         embed: discord.Embed,
-        timeout: Union[int, float, None] = 300,
+        timeout: int | float | None = 300,
         delete: bool = True,
     ):
         super().__init__(timeout=timeout)
-        self.value: Optional[bool] = None
+        self.value: bool | None = None
         self.ctx = ctx
         self.embed = embed
         self.delete = delete
@@ -306,7 +306,7 @@ class VotableEmbed(discord.Embed, metaclass=ABCMeta):
     """
 
     def __init__(self, *args, **kwargs):
-        super(VotableEmbed, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @abstractmethod
     async def vote_up(self, interaction: discord.Interaction):
@@ -341,7 +341,7 @@ class ScrollableVotingEmbed(ScrollableEmbed):
         locked: (:class:'bool'): True if only author can scroll, False otherwise
     """
 
-    def __init__(self, *args, **kwagrs) -> ScrollableVotingEmbed:
+    def __init__(self, *args, **kwagrs):
         super().__init__(*args, **kwagrs)
 
         if len(self.pages) == 1:
@@ -379,7 +379,7 @@ class ScrollableVotingEmbed(ScrollableEmbed):
         Sends the first page to the context.
         """
         ctx = self.ctx
-        if self.pages == []:
+        if not self.pages:
             self.clear_items()
             await ctx.reply(_(ctx, "No results were found."))
             self.stop()
@@ -449,12 +449,12 @@ class VoteEmbed(discord.ui.View):
         ctx: commands.Context,
         embed: discord.Embed,
         limit: int,
-        timeout: Union[int, float, None] = 300,
+        timeout: int | float | None = 300,
         delete: bool = True,
         vote_author: bool = False,
     ):
         super().__init__(timeout=timeout)
-        self.value: Optional[bool] = None
+        self.value: bool | None = None
         self.ctx = ctx
         self.embed = embed
         self.limit = limit
@@ -471,7 +471,7 @@ class VoteEmbed(discord.ui.View):
         """
 
         self.button = discord.ui.Button(
-            label=_(self.ctx, "Yes") + " ({})".format(len(self.voted)),
+            label=_(self.ctx, "Yes") + f" ({len(self.voted)})",
             style=discord.ButtonStyle.green,
             custom_id="yes-button",
         )
@@ -508,7 +508,7 @@ class VoteEmbed(discord.ui.View):
             _(self.ctx, "Your vote has been casted."), ephemeral=True
         )
 
-        self.button.label = _(self.ctx, "Yes") + " ({})".format(len(self.voted))
+        self.button.label = _(self.ctx, "Yes") + f" ({len(self.voted)})"
 
         await self.message.edit(embed=self.embed, view=self)
 
@@ -526,7 +526,7 @@ class CommandParser(argparse.ArgumentParser):
     and saves them in 'error_message' attribute.
     """
 
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
     def error(self, message: str):
         """Save the error message."""
@@ -536,9 +536,9 @@ class CommandParser(argparse.ArgumentParser):
         """Make sure the program _does not_ exit."""
         pass
 
-    def parse_args(self, args: Iterable):
+    def parse_args(self, args: Iterable):  # type: ignore[override]
         """Catch exceptions that do not occur when CLI program exits."""
-        returned = self.parse_known_args(args)
+        returned = self.parse_known_args(args)  # type: ignore
         try:
             args, argv = returned
         except TypeError:

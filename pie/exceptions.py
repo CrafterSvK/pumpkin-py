@@ -64,10 +64,10 @@ class BadTranslation(PumpkinException):
 
     def __init__(
         self,
-        langfile: str = None,
-        command: str = None,
-        string: str = None,
-        key: str = None,
+        langfile: str | None = None,
+        command: str | None = None,
+        string: str | None = None,
+        key: str | None = None,
     ):
         self.langfile = langfile
         self.command = command

@@ -2,7 +2,6 @@ import git
 import pytest
 import tempfile
 from pathlib import Path
-from typing import Union
 
 from pie.exceptions import RepositoryMetadataError
 from pie.repository import Repository
@@ -13,14 +12,14 @@ def _create_repo(path: str):
 
 
 def _update_init(
-    path: Union[str, Path],
+    path: str | Path,
     *,
     name: str = "test",
     modules: tuple = ("test",),
     create_modules: bool = True,
 ):
     """Update __init__.py file"""
-    if path.__class__ == str:
+    if isinstance(path, str):
         path = Path(path)
 
     with open(path / "__init__.py", "w") as handle:

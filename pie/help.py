@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Union, Set
+from collections.abc import Sequence
 
 from discord.ext import commands
 
@@ -28,7 +28,7 @@ class Help(commands.MinimalHelpCommand):
             **options,
         )
 
-    async def acl_check(self, cmd: Union[commands.Group, commands.Command]) -> bool:
+    async def acl_check(self, cmd: commands.Group | commands.Command) -> bool:
         """Return True if the command is allowed to run."""
         # FIXME Is there more built-in commands?
         if cmd.qualified_name == "help":
@@ -37,9 +37,9 @@ class Help(commands.MinimalHelpCommand):
         bot = cmd._cog.bot
         ctx = self.context
         command = cmd.qualified_name
-        bot_owner_ids: Set = getattr(bot, "owner_ids", {*()})
+        bot_owner_ids: set = getattr(bot, "owner_ids", {*()})
 
-        allow_invoke: Optional[bool] = ctx.author.id in bot_owner_ids or (
+        allow_invoke: bool | None = ctx.author.id in bot_owner_ids or (
             acl.can_invoke_command(bot, ctx, command)
         )
 

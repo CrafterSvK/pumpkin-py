@@ -7,7 +7,6 @@ import re
 import subprocess  # nosec: B404
 import sys
 from pathlib import Path
-from typing import List, Tuple, Optional
 
 from pie.exceptions import RepositoryMetadataError
 
@@ -24,10 +23,10 @@ class RepositoryManager:
     :param log: Information about repository manager actions.
     """
 
-    __instance: Optional[RepositoryManager] = None
+    __instance: RepositoryManager | None = None
 
-    repositories: List[Repository]
-    log: List[str]
+    repositories: list[Repository]
+    log: list[str]
 
     def __new__(cls, *args, **kwargs):
         """Create singleton instance."""
@@ -44,10 +43,10 @@ class RepositoryManager:
 
     def refresh(self) -> None:
         """Scan `modules/` directory and update repository list."""
-        repositories: List[Repository] = []
+        repositories: list[Repository] = []
 
         repo_dir: Path = Path("modules/").resolve()
-        found_dirs: List[Path] = sorted(
+        found_dirs: list[Path] = sorted(
             [d for d in repo_dir.iterdir() if d.is_dir() and d.name != "__pycache__"]
         )
 
@@ -70,7 +69,7 @@ class RepositoryManager:
 
         self.repositories = repositories
 
-    def get_repository(self, name: str) -> Optional[Repository]:
+    def get_repository(self, name: str) -> Repository | None:
         """Get repository by its name."""
         for repository in self.repositories:
             if repository.name == name:
@@ -86,9 +85,9 @@ class Repository:
     path: Path
     branch: str
     name: str
-    module_names: List[str]
+    module_names: list[str]
 
-    def __init__(self, path: Path, branch: Optional[str] = None):
+    def __init__(self, path: Path, branch: str | None = None):
         self.path: Path = path
         if branch is not None:
             self.change_branch(branch)
@@ -120,7 +119,7 @@ class Repository:
         except git.exc.GitCommandError as exc:
             raise ValueError(
                 f"Could not checkout branch '{branch}': {exc.stderr.strip()}"
-            )
+            ) from exc
 
     def set_facts(self) -> None:
         """Check the repo.conf and get the repository information."""
@@ -132,11 +131,11 @@ class Repository:
         config = configparser.ConfigParser()
         config.read(conf)
 
-        name: Optional[str] = config.get("repository", "name", fallback=None)
+        name: str | None = config.get("repository", "name", fallback=None)
         if not name:
             raise RepositoryMetadataError("'repo.conf' does not have 'name' key.")
 
-        modules: Optional[str] = config.get("repository", "modules", fallback=None)
+        modules: str | None = config.get("repository", "modules", fallback=None)
         if not modules:
             raise RepositoryMetadataError("'repo.conf' does not have 'modules' key.")
 
@@ -153,10 +152,10 @@ class Repository:
         if not init.is_file():
             return
 
-        name: Optional[str] = None
-        module_names: Tuple[str, ...] = tuple()
+        name: str | None = None
+        module_names: list[str] = []
 
-        with open(init, "r") as handle:
+        with open(init) as handle:
             for line in handle.readlines():
                 line = line.strip()
                 if "=" not in line:
@@ -191,7 +190,7 @@ class Repository:
         regex: str = (
             r"(__name__)(\s*)(=)(\s*)" + RE_QUOTE + "(" + RE_NAME + ")" + RE_QUOTE
         )
-        matched: Optional[re.Match] = re.fullmatch(regex, line)
+        matched: re.Match | None = re.fullmatch(regex, line)
         if matched is None:
             raise RepositoryMetadataError(
                 f"Repository at '{self.path}' has invalid name."
@@ -199,10 +198,10 @@ class Repository:
         name: str = matched.groups()[-2]
         return name
 
-    def _regex_get_modules(self, line: str) -> Tuple[str, ...]:
+    def _regex_get_modules(self, line: str) -> list[str]:
         """Get tuple of module names using regex."""
         regex: str = r"(__all__)(\s*)(=)(\s*)" + r"\((" + RE_NAMES + r")\)"
-        matched: Optional[re.Match] = re.fullmatch(regex, line)
+        matched: re.Match | None = re.fullmatch(regex, line)
         if matched is None:
             raise RepositoryMetadataError(
                 f"Repository at '{self.path}' has "
@@ -225,10 +224,10 @@ class Repository:
                 raise RepositoryMetadataError(
                     f"Module '{name}' is missing its module file."
                 )
-        return tuple(list_of_names)
+        return list_of_names
 
     @staticmethod
-    def git_clone(path: Path, url: str) -> Optional[str]:
+    def git_clone(path: Path, url: str) -> str | None:
         """Clone repository to given path.
 
         :return: stderr output on error, otherwise `None`.
@@ -265,7 +264,7 @@ class Repository:
         return result
 
     @property
-    def requirements_txt_hash(self) -> Optional[str]:
+    def requirements_txt_hash(self) -> str | None:
         """Get hash of requirements.txt.
 
         :return: SHA-256 of the file or `None` if it does not exist.
@@ -284,14 +283,14 @@ class Repository:
         file_hash = h.hexdigest()
         return file_hash
 
-    def install_requirements(self) -> Optional[str]:
+    def install_requirements(self) -> str | None:
         """Install packages from requirements.txt.
 
         :return: Command output if the file exists, otherwise `None`.
         """
-        reqirements = self.path / "requirements.txt"
-        if not reqirements.is_file():
-            return
+        requirements = self.path / "requirements.txt"
+        if not requirements.is_file():
+            return None
 
         output: subprocess.CompletedProcess = subprocess.run(  # nosec: B603
             [
@@ -300,10 +299,9 @@ class Repository:
                 "pip",
                 "install",
                 "-r",
-                reqirements.resolve(),
+                requirements.resolve(),
             ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
         )
 
         result = output.stderr or output.stdout

@@ -1,24 +1,24 @@
 from __future__ import annotations
 
 import datetime
-from typing import List, Optional
 
-from sqlalchemy import BigInteger, Column, Date, Integer, UniqueConstraint
+from sqlalchemy import BigInteger, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
 
-from pie.database import database, session
+from pie.database import session, Base
 
 
-class Subscription(database.base):
+class Subscription(Base):
     __tablename__ = "base_errors_meme_subscriptions"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    channel_id = Column(BigInteger)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    channel_id: Mapped[int] = mapped_column(BigInteger)
 
     __table_args__ = (UniqueConstraint(guild_id, channel_id),)
 
     @classmethod
-    def add(cls, guild_id: int, channel_id: int) -> Optional[Subscription]:
+    def add(cls, guild_id: int, channel_id: int) -> Subscription | None:
         if cls.get(guild_id, channel_id) is not None:
             return None
         query = cls(guild_id=guild_id, channel_id=channel_id)
@@ -27,7 +27,7 @@ class Subscription(database.base):
         return query
 
     @classmethod
-    def get(cls, guild_id: int, channel_id: int) -> Optional[Subscription]:
+    def get(cls, guild_id: int, channel_id: int) -> Subscription | None:
         return (
             session.query(cls)
             .filter_by(guild_id=guild_id, channel_id=channel_id)
@@ -35,7 +35,7 @@ class Subscription(database.base):
         )
 
     @classmethod
-    def get_all(cls, guild_id: Optional[int]) -> List[Subscription]:
+    def get_all(cls, guild_id: int | None) -> list[Subscription]:
         query = session.query(cls)
         if guild_id:
             query = query.filter_by(guild_id=guild_id)
@@ -63,11 +63,11 @@ class Subscription(database.base):
         }
 
 
-class LastError(database.base):
+class LastError(Base):
     __tablename__ = "base_errors_meme_last"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    date = Column(Date)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    date: Mapped[datetime.date] = mapped_column()
 
     @classmethod
     def set(cls) -> bool:
@@ -88,7 +88,7 @@ class LastError(database.base):
         return True
 
     @classmethod
-    def get(cls) -> Optional[LastError]:
+    def get(cls) -> LastError | None:
         return session.query(cls).one_or_none()
 
     def __repr__(self) -> str:

@@ -1,36 +1,40 @@
 from __future__ import annotations
-from typing import Optional, List
 
-from sqlalchemy import Column, String, Boolean
+from typing import cast
 
-from pie.database import database, session
+from sqlalchemy import select
+from sqlalchemy.orm import Mapped, mapped_column
+
+from pie.database import session, Base
 
 
-class BaseAdminModule(database.base):
+class BaseAdminModule(Base):
     __tablename__ = "base_admin_modules"
 
-    name = Column(String, primary_key=True)
-    enabled = Column(Boolean, default=True)
+    name: Mapped[str] = mapped_column(primary_key=True)
+    enabled: Mapped[bool] = mapped_column(default=True)
 
     @staticmethod
     def add(name: str, enabled: bool) -> BaseAdminModule:
         """Add new module entry to database."""
-        query = BaseAdminModule(name=name, enabled=enabled)
-        session.merge(query)
+        module = BaseAdminModule(name=name, enabled=enabled)
+        session.merge(module)
         session.commit()
-        return query
+        return module
 
     @staticmethod
-    def get(name: str) -> Optional[BaseAdminModule]:
+    def get(name: str) -> BaseAdminModule | None:
         """Get module entry."""
-        query = session.query(BaseAdminModule).filter_by(name=name).one_or_none()
-        return query
+        return session.execute(
+            select(BaseAdminModule).where(BaseAdminModule.name == name)
+        ).scalar_one_or_none()
 
     @staticmethod
-    def get_all() -> List[BaseAdminModule]:
+    def get_all() -> list[BaseAdminModule]:
         """Get all modules."""
-        query = session.query(BaseAdminModule).all()
-        return query
+        modules = session.execute(select(BaseAdminModule)).scalars().all()
+
+        return cast(list[BaseAdminModule], modules)
 
     def __repr__(self) -> str:
-        return f'<BaseAdminModules name="{self.name}" enabled="{self.enabled}">'
+        return f'<BaseAdminModule name="{self.name}" enabled="{self.enabled}">'

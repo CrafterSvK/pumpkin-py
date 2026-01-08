@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Optional
+from collections.abc import Iterable
 
 import discord
 
@@ -25,7 +25,7 @@ def sanitise(
         return string[:limit]
 
 
-def split(string: str, limit: int = 1990) -> List[str]:
+def split(string: str, limit: int = 1990) -> list[str]:
     """Split text into multiple smaller ones.
 
     :param string: A text string to split.
@@ -33,10 +33,10 @@ def split(string: str, limit: int = 1990) -> List[str]:
     :return: A string split into a list of smaller lines with maximal length of
         ``limit``.
     """
-    return list(string[0 + i : limit + i] for i in range(0, len(string), limit))
+    return [string[0 + i : limit + i] for i in range(0, len(string), limit)]
 
 
-def split_lines(lines: List[str], limit: int = 1990) -> List[str]:
+def split_lines(lines: list[str], limit: int = 1990) -> list[str]:
     """Split list of lines to bigger blocks.
 
     :param lines: List of lines to split.
@@ -47,7 +47,7 @@ def split_lines(lines: List[str], limit: int = 1990) -> List[str]:
     this guarantees that the line won't be split at half, instead of calling
     the :meth:`split()` on ``lines`` joined with newline character.
     """
-    pages: List[str] = list()
+    pages: list[str] = []
     page: str = ""
 
     for line in lines:
@@ -59,7 +59,7 @@ def split_lines(lines: List[str], limit: int = 1990) -> List[str]:
     return pages
 
 
-def parse_bool(string: str) -> Optional[bool]:
+def parse_bool(string: str) -> bool | None:
     """Parse string into a boolean.
 
     :param string: Text to be parsed.
@@ -79,8 +79,12 @@ def parse_bool(string: str) -> Optional[bool]:
 
 
 def create_table(
-    iterable: Iterable, header: Dict[str, str], *, limit: int = 1990, rich: bool = True
-) -> List[str]:
+    iterable: Iterable[object],
+    header: dict[str, str],
+    *,
+    limit: int = 1990,
+    rich: bool = True,
+) -> list[str]:
     """Create table from any iterable.
 
     This is useful mainly for '<command> list' situations.
@@ -94,14 +98,14 @@ def create_table(
             Defaults to ``False`` until Discord properly supports ANSI
             escape codes on Android.
     """
-    matrix: List[List[str]] = []
-    pages: List[str] = []
+    matrix: list[list[str]] = []
+    pages: list[str] = []
 
     # Compute column widths, make sure all fields have non-None values
     matrix.append(list(header.values()))
-    column_widths: List[int] = [len(v) for v in header.values()]
+    column_widths: list[int] = [len(v) for v in header.values()]
     for item in iterable:
-        line: List[str] = []
+        line: list[str] = []
         for i, attr in enumerate(header.keys()):
             line.append(str(getattr(item, attr, "")))
 
@@ -123,30 +127,30 @@ def create_table(
 
     page: str = P
     for i, matrix_line in enumerate(matrix):
-        line: str = ""
+        mline: str = ""
 
         # Color heading & odd lines
         if i == 0:
-            line += H
+            mline += H
         elif i % 2 == 0:
-            line += A
+            mline += A
 
         # Add values
         for column_no, column_width in enumerate(column_widths):
-            line += matrix_line[column_no].ljust(column_width + 2)
+            mline += matrix_line[column_no].ljust(column_width + 2)
 
         # End line
-        line = line.rstrip()
+        mline = mline.rstrip()
         if i % 2 == 0:
-            line += R + "\n"
+            mline += R + "\n"
         else:
-            line += "\n"
+            mline += "\n"
 
         # Add line
-        if len(page) + len(line) > limit:
+        if len(page) + len(mline) > limit:
             pages.append(page)
             page = P
-        page += line
+        page += mline
 
     # Add final non-complete page
     pages.append(page)

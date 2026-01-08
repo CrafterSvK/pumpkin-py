@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import inspect
 import re
-from typing import Callable, Optional, Set, TypeVar, Union
+from typing import TypeVar
+from collections.abc import Callable
 
 import ring
 
@@ -41,7 +42,7 @@ def map_member_to_ACLevel(
     # Gather information
 
     # NOTE This relies on pumpkin.py:update_app_info()
-    bot_owner_ids: Set = getattr(bot, "owner_ids", {*()})
+    bot_owner_ids: set = getattr(bot, "owner_ids", {*()})
     guild_owner_id: int = member.guild.owner.id
 
     is_bot_owner: bool = False
@@ -97,7 +98,7 @@ def acl2(level: ACLevel) -> Callable[[T], T]:
             await ctx.reply(utils.text.sanitise(input, escape=False))
     """
 
-    def predicate(action: Union[commands.Context, discord.Interaction]) -> bool:
+    def predicate(action: commands.Context | discord.Interaction) -> bool:
         if type(action) is commands.Context:
             ctx: commands.Context = action
             return acl2_function(
@@ -109,8 +110,8 @@ def acl2(level: ACLevel) -> Callable[[T], T]:
                 channel=ctx.channel,
             )
 
-        bot: Union[commands.Bot, commands.AutoShardedBot] = action.client
-        invoker: Union[discord.User, discord.Member] = action.user
+        bot: commands.Bot | commands.AutoShardedBot = action.client
+        invoker: discord.User | discord.Member = action.user
         guild: discord.Guild = action.guild
         channel: discord.abc.Messageable = action.channel
         command: str = action.command.qualified_name
@@ -130,8 +131,8 @@ def acl2(level: ACLevel) -> Callable[[T], T]:
 # TODO Make cachable as well?
 def acl2_function(
     level: ACLevel,
-    bot: Union[commands.Bot, commands.AutoShardedBot],
-    invoker: Union[discord.User, discord.Member],
+    bot: commands.Bot | commands.AutoShardedBot,
+    invoker: discord.User | discord.Member,
     command: str,
     guild: discord.Guild = None,
     channel: discord.abc.Messageable = None,
@@ -192,8 +193,7 @@ def acl2_function(
 
     if member_level >= level:
         _acl_trace(
-            f"Member's level '{member_level.name}' "
-            f"higher than required '{level.name}'."
+            f"Member's level '{member_level.name}' higher than required '{level.name}'."
         )
         return True
 
@@ -206,7 +206,7 @@ def acl2_function(
 # Utility functions
 
 
-def get_hardcoded_ACLevel(command: Callable) -> Optional[ACLevel]:
+def get_hardcoded_ACLevel(command: Callable) -> ACLevel | None:
     """Inspect the source code and extract ACLevel from the decorator."""
     source = inspect.getsource(command)
     match = re.search(r"acl2\(check\.ACLevel\.(.*)\)", source)
@@ -216,11 +216,10 @@ def get_hardcoded_ACLevel(command: Callable) -> Optional[ACLevel]:
     return ACLevel[level]
 
 
-def get_true_ACLevel(
-    bot: commands.Bot, guild_id: int, command: str
-) -> Optional[ACLevel]:
+def get_true_ACLevel(bot: commands.Bot, guild_id: int, command: str) -> ACLevel | None:
     """Get command's ACLevel from database or from the source code."""
     default_overwrite = ACDefault.get(guild_id, command)
+    level: ACLevel | None
     if default_overwrite:
         level = default_overwrite.level
     else:
@@ -231,7 +230,7 @@ def get_true_ACLevel(
 
 def can_invoke_command(
     bot: commands.Bot, ctx: commands.Context, command: str
-) -> Optional[bool]:
+) -> bool | None:
     """Check if the command is invokable in supplied context.
 
     Returns `None` for direct message contexts.

@@ -3,10 +3,10 @@
 Containers
 ==========
 
-Containers allow running the bot independent of the host environment. 
+Containers allow running the bot independent of the host environment.
 This makes things easier and containers more portable.
 
-It is possible to use containers for development as well. 
+It is possible to use containers for development as well.
 Just make sure you have fetched the source code and skip :ref:`containers_no_local_repo`.
 
 .. _containers_download:
@@ -15,10 +15,10 @@ Fetching source code (optional)
 -------------------------------
 
 .. note::
-	It is not neccesary to fetch the source code when using containers. 
+	It is not neccesary to fetch the source code when using containers.
 	See :ref:`containers_no_local_repo`.
 
-Use ``git`` to download the source code. 
+Use ``git`` to download the source code.
 
 .. warning::
 	It is necessary to use HTTPS, because the container should not have ssh keys set up.
@@ -42,11 +42,11 @@ To update the bot later, run
 Running without local source code
 ---------------------------------
 
-If you don't want to download the source code to your host, or use Docker, 
+If you don't want to download the source code to your host, or use Docker,
 you can leverage volumes to make your modules persistent.
 
 Simply create a folder create a ``.env`` file with the contents of \
-the ``default.docker.env`` file in the repository and create ``docker-compose.yml`` 
+the ``default.docker.env`` file in the repository and create ``docker-compose.yml``
 with the contents of the ``docker-compose.yml`` from the repository as well.
 
 You will need to edit the volumes of the bot service in ``docker-compose.yml`` file accordingly:
@@ -69,7 +69,7 @@ And add a new volume to end of the file:
 Database
 --------
 
-The database holds all dynamic bot data (e.g. the user content). There are multiple options, 
+The database holds all dynamic bot data (e.g. the user content). There are multiple options,
 but the provided `docker-compose.yml` is already set up with PostgreSQL with automatic backups.
 
 If you plan to run without a local repository, you already have the ``.env`` file.
@@ -158,7 +158,7 @@ Start the stack
 ---------------
 
 .. note::
-	Make sure you are in the right directory (the one where ``.env`` and ``docker-compose.yml`` files are) 
+	Make sure you are in the right directory (the one where ``.env`` and ``docker-compose.yml`` files are)
 
 .. warning::
 	If you're using Podman, you will need to run these commands with sudo.
@@ -169,7 +169,7 @@ Create the docker-compose stack:
 
 	docker-compose up --detach
 
-The above command will pull the necessary container images and start the stack. 
+The above command will pull the necessary container images and start the stack.
 The bot will take some time to actually start responding,
 because the container needs to install any additional ``apt`` dependencies first (from the aforementioned env var)
 and make sure that all the required pip packages are installed as well.

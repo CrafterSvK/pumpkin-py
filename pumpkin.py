@@ -3,7 +3,6 @@ import os
 import sys
 import platform
 from pathlib import Path
-from typing import Dict
 
 import sqlalchemy
 
@@ -18,9 +17,9 @@ from pie import exceptions
 
 
 def test_dotenv() -> None:
-    if type(os.getenv("DB_STRING")) != str:
+    if not isinstance(os.getenv("DB_STRING"), str):
         raise exceptions.DotEnvException("DB_STRING is not set.")
-    if type(os.getenv("TOKEN")) != str:
+    if not isinstance(os.getenv("TOKEN"), str):
         raise exceptions.DotEnvException("TOKEN is not set.")
 
 
@@ -28,9 +27,11 @@ test_dotenv()
 
 
 def print_versions():
-    python_version: str = "{0.major}.{0.minor}.{0.micro}".format(sys.version_info)
+    python_version: str = (
+        f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
     python_release: str = f"{platform.machine()} {platform.version()}"
-    dpy_version: str = "{0.major}.{0.minor}.{0.micro}".format(discord.version_info)
+    dpy_version: str = f"{discord.version_info.major}.{discord.version_info.minor}.{discord.version_info.micro}"
 
     print("Starting with:")
     print(f"- Python version {COLOR.green}{python_version}{COLOR.none}")
@@ -40,10 +41,9 @@ def print_versions():
     print("Using repositories:")
 
     init = Path(__file__).resolve()
-    module_dirs: Path = sorted((init.parent / "modules").glob("*"))
+    module_dirs: list[Path] = sorted((init.parent / "modules").glob("*"))
 
-    dot_git_paths: Dict[str, Path] = {}
-    dot_git_paths["base"] = init.parent / ".git"
+    dot_git_paths: dict[str, Path] = {"base": init.parent / ".git"}
 
     for module_dir in module_dirs:
         if (module_dir / ".git").is_dir():
@@ -231,23 +231,23 @@ async def load_modules():
             file=sys.stdout,
         )  # noqa: T001
 
-    for module in db_modules:
-        if not module.enabled:
+    for bam_module in db_modules:
+        if not bam_module.enabled:
             print(
-                f"Module {COLOR.yellow}{module.name}{COLOR.none} found, but is disabled.",
+                f"Module {COLOR.yellow}{bam_module.name}{COLOR.none} found, but is disabled.",
                 file=sys.stdout,
             )  # noqa: T001
             continue
         try:
-            await bot.load_extension(f"modules.{module.name}.module")
+            await bot.load_extension(f"modules.{bam_module.name}.module")
         except (ImportError, ModuleNotFoundError, commands.ExtensionNotFound):
             print(
-                f"Module {COLOR.red}{module.name}{COLOR.none} not found.",
+                f"Module {COLOR.red}{bam_module.name}{COLOR.none} not found.",
                 file=sys.stdout,
             )  # noqa: T001
             continue
         print(
-            f"Module {COLOR.green}{module.name}{COLOR.none} loaded.",
+            f"Module {COLOR.green}{bam_module.name}{COLOR.none} loaded.",
             file=sys.stdout,
         )  # noqa: T001
 
@@ -261,4 +261,5 @@ async def main():
     await bot.start(os.getenv("TOKEN"))
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

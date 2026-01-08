@@ -1,20 +1,22 @@
 import importlib
 import os
-from typing import List
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base, Session
+from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase
 
 from pie.cli import COLOR
+
+
+class Base(DeclarativeBase):
+    pass
 
 
 class Database:
     """Main database connector."""
 
     def __init__(self):
-        self.base = declarative_base()
         self.db = create_engine(
-            os.getenv("DB_STRING"),
+            os.getenv("DB_STRING"),  # type: ignore
             # This forces the SQLAlchemy 1.4 to use the 2.0 syntax
             future=True,
         )
@@ -31,15 +33,13 @@ def init_core():
     """
     # Everything depends on config, we have to initiate it first
     importlib.import_module("pie.database.config")
-    database.base.metadata.create_all(database.db)
+    Base.metadata.create_all(database.db)
 
     for module in ("acl", "i18n", "logger", "storage", "spamchannel"):
         import_stub: str = f"pie.{module}.database"
         try:
             importlib.import_module(import_stub)
-            print(
-                f"Database models {COLOR.green}{import_stub}{COLOR.none} imported."
-            )  # noqa: T001
+            print(f"Database models {COLOR.green}{import_stub}{COLOR.none} imported.")  # noqa: T001
         except Exception as exc:
             print(
                 f"Database models {COLOR.red}{import_stub}{COLOR.none} failed: "
@@ -47,7 +47,7 @@ def init_core():
             )  # noqa: T001
             raise
 
-    database.base.metadata.create_all(database.db)
+    Base.metadata.create_all(database.db)
     session.commit()
 
 
@@ -58,11 +58,11 @@ def init_modules():
     """
     _import_database_tables()
 
-    database.base.metadata.create_all(database.db)
+    Base.metadata.create_all(database.db)
     session.commit()
 
 
-def _list_directory_directories(directory: str) -> List[str]:
+def _list_directory_directories(directory: str) -> list[str]:
     """Return filtered list of directories.
 
     :param directory: Absolute or relative (from the ``__main__`` file) path to
@@ -88,9 +88,9 @@ def _import_database_tables():
 
     When the tables are imported, :meth:`init_modules` can create their tables.
     """
-    repositories: List[str] = _list_directory_directories("modules")
+    repositories: list[str] = _list_directory_directories("modules")
     for repository in repositories:
-        modules: List[str] = _list_directory_directories(repository)
+        modules: list[str] = _list_directory_directories(repository)
         for module in modules:
             # Detect module's database files
             # TODO This has not been tested with "database/" as directory.
@@ -107,9 +107,7 @@ def _import_database_tables():
             try:
                 import_stub: str = database_stub.replace("/", ".")
                 importlib.import_module(import_stub)
-                print(
-                    f"Database models {COLOR.green}{import_stub}{COLOR.none} imported."
-                )  # noqa: T001
+                print(f"Database models {COLOR.green}{import_stub}{COLOR.none} imported.")  # noqa: T001
             except ModuleNotFoundError as exc:
                 # TODO How to properly log errors?
                 print(

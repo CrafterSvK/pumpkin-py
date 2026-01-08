@@ -1,38 +1,38 @@
 msgid I don't know command **{name}**.
-msgstr Neznám příkaz **{name}**.
+msgstr
 
 msgid Command **{name}** does not have subcommand **{subcommand}**.
-msgstr Příkaz **{name}** nemá podpříkaz **{subcommand}**.
+msgstr
 
 msgid Command **{name}** has no subcommand.
-msgstr Příkaz **{name}** nemá žádný podpříkaz.
+msgstr
 
 msgid Page
-msgstr Strana
+msgstr
 
 msgid No results were found.
-msgstr Nebyl nalezen žádný výsledek
+msgstr
 
 msgid Only command issuer can toggle the lock.
-msgstr Pouze odesílatel příkazu může použít zámek.
+msgstr
 
 msgid Only command issuer can scroll.
-msgstr Pouze odesílatel příkazu může posouvat stránky.
+msgstr
 
 msgid Confirm
-msgstr Potvrdit
+msgstr
 
 msgid Reject
-msgstr Zrušit
+msgstr
 
 msgid Only the author can confirm the action.
-msgstr Pouze autor může tuto akci potvrdit.
+msgstr
 
 msgid Yes
-msgstr Ano
+msgstr
 
 msgid You have already voted!
-msgstr Již jsi hlasoval!
+msgstr
 
 msgid Your vote has been casted.
-msgstr Tvůj hlas byl započítán.
+msgstr

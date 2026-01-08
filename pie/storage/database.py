@@ -1,20 +1,21 @@
 from __future__ import annotations
 
-from typing import Dict, Optional, Union
+from typing import Any, cast
 
-from sqlalchemy import BigInteger, Column, String
+from sqlalchemy import BigInteger, CursorResult, delete
+from sqlalchemy.orm import mapped_column, Mapped
 
-from pie.database import database, session
+from pie.database import session, Base
 
 
-class StorageData(database.base):
+class StorageData(Base):
     __tablename__ = "pie_storage_data"
 
-    module = Column(String, primary_key=True)
-    guild_id = Column(BigInteger, primary_key=True)
-    key = Column(String, primary_key=True)
-    value = Column(String)
-    type = Column(String)
+    module: Mapped[str] = mapped_column(primary_key=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    key: Mapped[str] = mapped_column(primary_key=True)
+    value: Mapped[str] = mapped_column()
+    type: Mapped[str] = mapped_column()
 
     @staticmethod
     def set(
@@ -23,7 +24,7 @@ class StorageData(database.base):
         key: str,
         value,
         allow_overwrite: bool = True,
-    ) -> Optional[StorageData]:
+    ) -> StorageData | None:
         data = (
             session.query(StorageData)
             .filter_by(module=module)
@@ -46,7 +47,7 @@ class StorageData(database.base):
         return data
 
     @staticmethod
-    def get(module: str, guild_id: int, key: str) -> Optional[StorageData]:
+    def get(module: str, guild_id: int, key: str) -> StorageData | None:
         data = (
             session.query(StorageData)
             .filter_by(module=module)
@@ -56,16 +57,17 @@ class StorageData(database.base):
         )
         return data
 
-    @classmethod
+    @staticmethod
     def remove(module: str, guild_id: int, key: str) -> bool:
-        count = (
-            session.get(StorageData)
-            .filter_by(module=module, guild_id=guild_id, key=key)
-            .delete()
+        result = session.execute(
+            delete(StorageData)
+            .where(StorageData.module == module)
+            .where(StorageData.guild_id == guild_id)
+            .where(StorageData.key == key)
         )
         session.commit()
 
-        return count == 1
+        return cast(CursorResult, result).rowcount == 1
 
     def __repr__(self) -> str:
         return (
@@ -73,7 +75,7 @@ class StorageData(database.base):
             f'value="{self.value}" type="{self.type}">'
         )
 
-    def dump(self) -> Dict[str, Union[int, str]]:
+    def dump(self) -> dict[str, Any]:
         """Return object representation as dictionary for easy serialisation."""
         return {
             "module": self.module,

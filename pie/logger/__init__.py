@@ -7,7 +7,7 @@ import re
 import sys
 import traceback
 from enum import IntEnum
-from typing import Optional, List, Union
+from typing import TypeAlias
 
 import discord
 
@@ -45,18 +45,17 @@ class LogScope(IntEnum):
     GUILD = 1
 
 
-LogActor = Optional[Union[discord.Member, discord.User]]
+LogActor: TypeAlias = discord.Member | discord.User | None
 
-LogSource = Optional[
-    Union[
-        discord.Guild,
-        discord.DMChannel,
-        discord.GroupChannel,
-        discord.TextChannel,
-        discord.StageChannel,
-        discord.VoiceChannel,
-    ]
-]
+LogSource: TypeAlias = (
+    discord.Guild
+    | discord.DMChannel
+    | discord.GroupChannel
+    | discord.TextChannel
+    | discord.StageChannel
+    | discord.VoiceChannel
+    | None
+)
 
 
 class LogEntry:
@@ -64,16 +63,16 @@ class LogEntry:
 
     def __init__(
         self,
-        stack: List[traceback.FrameSummary],
+        stack: list[traceback.FrameSummary],
         scope: LogScope,
         level: LogLevel,
         actor: LogActor,
         source: LogSource,
         message: str,
         *,
-        content: Optional[str] = None,
-        exception: Optional[Exception] = None,
-        embed: Optional[discord.Embed] = None,
+        content: str | None = None,
+        exception: Exception | None = None,
+        embed: discord.Embed | None = None,
     ):
         self.timestamp = datetime.datetime.now()
         self.stack = stack
@@ -112,27 +111,27 @@ class LogEntry:
         return self.stack[-1].lineno
 
     @property
-    def actor_id(self) -> Optional[int]:
+    def actor_id(self) -> int | None:
         return getattr(self.actor, "id", None)
 
     @property
-    def actor_name(self) -> Optional[str]:
+    def actor_name(self) -> str | None:
         return getattr(self.actor, "name", None)
 
     @property
-    def channel_id(self) -> Optional[int]:
+    def channel_id(self) -> int | None:
         return getattr(self.channel, "id", None)
 
     @property
-    def channel_name(self) -> Optional[str]:
+    def channel_name(self) -> str | None:
         return getattr(self.channel, "name", None)
 
     @property
-    def guild_id(self) -> Optional[int]:
+    def guild_id(self) -> int | None:
         return getattr(self.guild, "id", None)
 
     @property
-    def guild_name(self) -> Optional[str]:
+    def guild_name(self) -> str | None:
         return getattr(self.guild, "name", None)
 
     @property
@@ -152,7 +151,7 @@ class LogEntry:
         return filename
 
     @property
-    def module(self) -> Optional[str]:
+    def module(self) -> str | None:
         RE_MODULE = r"modules/([a-z]+)/([a-z]+)/(.*)"
         stubs = re.search(RE_MODULE, self.filename)
         if stubs is None:
@@ -186,16 +185,15 @@ class LogEntry:
 
     def _format_as_string(self, *, extended: bool) -> str:
         """Format the event as string."""
-        stubs: List[str] = []
+        stubs: list[str] = [self.levelstr]
 
-        stubs.append(self.levelstr)
         if self.actor is not None:
-            stubs.append(self.actor_name)
-            stubs.append(f"({self.actor_id})")
+            stubs.append(self.actor.name)
+            stubs.append(f"({self.actor.id})")
         if self.channel_name is not None:
             stubs.append(f"#{self.channel_name}")
         if extended and self.guild is not None:
-            stubs.append(self.guild_name)
+            stubs.append(self.guild.name)
 
         message: str = " ".join(stubs) + f": {self.message}"
 
@@ -228,8 +226,8 @@ class LogEntry:
 
 
 class AbstractLogger:
-    bot = None
-    scope = NotImplemented
+    bot: discord.ext.commands.bot | None = None
+    scope: LogScope
 
     def __init__(self, bot: discord.ext.commands.bot):
         raise NotImplementedError(
@@ -247,9 +245,9 @@ class AbstractLogger:
         source: LogSource,
         message: str,
         *,
-        content: Optional[str] = None,
-        exception: Optional[Exception] = None,
-        embed: Optional[discord.Embed] = None,
+        content: str | None = None,
+        exception: Exception | None = None,
+        embed: discord.Embed | None = None,
     ):
         entry = LogEntry(
             stack=traceback.extract_stack()[:-2],
@@ -283,7 +281,7 @@ class AbstractLogger:
             )
         elif entry.scope == LogScope.GUILD:
             confs = LogConf.get_guild_subscriptions(
-                level=entry.levelno, module=entry.module, guild_id=entry.guild_id
+                level=entry.levelno, module=entry.module, guild_id=entry.guild.id
             )
         else:
             raise ValueError(f"Got invalid LogScope of {entry.level}.")
@@ -291,10 +289,10 @@ class AbstractLogger:
         if not confs:
             return
 
-        output: List[str] = utils.text.split(entry.format_to_discord())
+        output: list[str] = utils.text.split(entry.format_to_discord())
         for conf in confs:
             try:
-                channel = self.bot.get_guild(conf.guild_id).get_channel(conf.channel_id)
+                channel = self.bot.get_guild(conf.guild_id).get_channel(conf.channel_id)  # type: ignore
             except AttributeError as exc:
                 message: str = "Log event target is not available"
 
@@ -319,9 +317,9 @@ class AbstractLogger:
         source: LogSource,
         message: str,
         *,
-        exception: Optional[Exception] = None,
-        content: Optional[str] = None,
-        embed: Optional[discord.Embed] = None,
+        exception: Exception | None = None,
+        content: str | None = None,
+        embed: discord.Embed | None = None,
     ):
         await self._log(
             LogLevel.DEBUG, actor, source, message, exception=exception, embed=embed
@@ -333,9 +331,9 @@ class AbstractLogger:
         source: LogSource,
         message: str,
         *,
-        exception: Optional[Exception] = None,
-        content: Optional[str] = None,
-        embed: Optional[discord.Embed] = None,
+        exception: Exception | None = None,
+        content: str | None = None,
+        embed: discord.Embed | None = None,
     ):
         await self._log(
             LogLevel.INFO, actor, source, message, exception=exception, embed=embed
@@ -347,9 +345,9 @@ class AbstractLogger:
         source: LogSource,
         message: str,
         *,
-        exception: Optional[Exception] = None,
-        content: Optional[str] = None,
-        embed: Optional[discord.Embed] = None,
+        exception: Exception | None = None,
+        content: str | None = None,
+        embed: discord.Embed | None = None,
     ):
         await self._log(
             LogLevel.WARNING, actor, source, message, exception=exception, embed=embed
@@ -361,9 +359,9 @@ class AbstractLogger:
         source: LogSource,
         message: str,
         *,
-        exception: Optional[Exception] = None,
-        content: Optional[str] = None,
-        embed: Optional[discord.Embed] = None,
+        exception: Exception | None = None,
+        content: str | None = None,
+        embed: discord.Embed | None = None,
     ):
         await self._log(
             LogLevel.ERROR, actor, source, message, exception=exception, embed=embed
@@ -375,9 +373,9 @@ class AbstractLogger:
         source: LogSource,
         message: str,
         *,
-        exception: Optional[Exception] = None,
-        content: Optional[str] = None,
-        embed: Optional[discord.Embed] = None,
+        exception: Exception | None = None,
+        content: str | None = None,
+        embed: discord.Embed | None = None,
     ):
         await self._log(
             LogLevel.CRITICAL, actor, source, message, exception=exception, embed=embed
@@ -387,11 +385,11 @@ class AbstractLogger:
 class Bot(AbstractLogger):
     """Logger for bot-wide events."""
 
-    __instance = None
-    bot = None
+    __instance: Bot | None = None
+    bot: discord.ext.commands.bot | None = None
     scope = LogScope.BOT
 
-    def __init__(self, bot: Optional[discord.ext.commands.bot] = None):
+    def __init__(self, bot: discord.ext.commands.bot | None = None):
         if Bot.__instance is not None:
             raise Exception("Logger has to be a singleton, use '.logger()' instead.")
 
@@ -400,9 +398,10 @@ class Bot(AbstractLogger):
             self.bot = bot
 
     @staticmethod
-    def logger(bot: Optional[discord.ext.commands.bot] = None):
+    def logger(bot: discord.ext.commands.bot | None = None):
         if Bot.__instance is None:
             Bot(bot)
+        assert Bot.__instance is not None
         if Bot.__instance.bot is None:
             raise Exception("Bot logger is missing 'bot' attribute.")
         return Bot.__instance
@@ -411,11 +410,11 @@ class Bot(AbstractLogger):
 class Guild(AbstractLogger):
     """Logger for guild-wide events."""
 
-    __instance = None
-    bot = None
+    __instance: Guild | None = None
+    bot: discord.ext.commmand.bot | None = None
     scope = LogScope.GUILD
 
-    def __init__(self, bot: Optional[discord.ext.commands.bot] = None):
+    def __init__(self, bot: discord.ext.commands.bot | None = None):
         if Guild.__instance is not None:
             raise Exception("Logger has to be a singleton, use '.logger()' instead.")
 
@@ -424,9 +423,10 @@ class Guild(AbstractLogger):
             self.bot = bot
 
     @staticmethod
-    def logger(bot: Optional[discord.ext.commands.bot] = None):
+    def logger(bot: discord.ext.commands.bot | None = None):
         if Guild.__instance is None:
             Guild(bot)
+        assert Guild.__instance is not None
         if Guild.__instance.bot is None:
             raise Exception("Guild logger is missing 'bot' attribute.")
         return Guild.__instance

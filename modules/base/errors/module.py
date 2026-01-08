@@ -1,7 +1,6 @@
 import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import List, Tuple
 
 import discord
 from discord.ext import commands
@@ -103,7 +102,7 @@ class Errors(commands.Cog):
                     self.channel = f"#{result.channel_id}"
 
         channels = [Item(result) for result in results]
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             channels,
             header={"channel": _(ctx, "Channel")},
         )
@@ -124,13 +123,12 @@ class Errors(commands.Cog):
         today = datetime.date.today()
         last = LastError.get()
         if last and today <= last.date and not test:
-            # Last error occured today, do not announce anything
+            # Last error occurred today, do not announce anything
             return
+        last_dict = {"date": today}
         if last is not None:
-            last = last.dump()
-        else:
-            last = {"date": today}
-        count: int = (today - last["date"]).days
+            last_dict = last.dump()
+        count: int = (today - last_dict["date"]).days
 
         if not test:
             await bot_log.debug(self.bot.user, None, "Updating day of last error.")
@@ -151,7 +149,7 @@ class Errors(commands.Cog):
                 title=_(gtx, "{count} days without an accident.").format(count=count),
                 description=_(
                     gtx, "Previous error occured on **{date}**. Resetting counter..."
-                ).format(date=last["date"].strftime("%Y-%m-%d")),
+                ).format(date=last_dict["date"].strftime("%Y-%m-%d")),
             )
             if test:
                 embed.add_field(
@@ -169,9 +167,7 @@ class Errors(commands.Cog):
     #
 
     @commands.Cog.listener()
-    async def on_command_error(
-        self, ctx: commands.Context, error: commands.CommandError
-    ):
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         """Handle bot exceptions."""
         # Recursion prevention
         if hasattr(ctx.command, "on_error") or hasattr(ctx.command, "on_command_error"):
@@ -205,7 +201,7 @@ class Errors(commands.Cog):
             await self.send_error_meme()
 
     @staticmethod
-    async def handle_exceptions(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_exceptions(ctx, error) -> tuple[str, str, bool]:
         """Handles creating embed titles and descriptions of various exceptions
 
         Args:
@@ -233,7 +229,7 @@ class Errors(commands.Cog):
         )
 
     @staticmethod
-    async def handle_PumpkinException(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_PumpkinException(ctx, error) -> tuple[str, str, bool]:
         """Handles exceptions raised by pumpkin-py
 
         Args:
@@ -263,7 +259,7 @@ class Errors(commands.Cog):
         )
 
     @staticmethod
-    async def handle_DiscordException(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_DiscordException(ctx, error) -> tuple[str, str, bool]:
         """Handles exceptions raised by Discord
 
         Args:
@@ -313,7 +309,7 @@ class Errors(commands.Cog):
         )
 
     @staticmethod
-    async def handle_ClientException(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_ClientException(ctx, error) -> tuple[str, str, bool]:
         """Handles exceptions raised by the Client
 
         Args:
@@ -380,7 +376,7 @@ class Errors(commands.Cog):
         )
 
     @staticmethod
-    async def handle_HTTPException(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_HTTPException(ctx, error) -> tuple[str, str, bool]:
         """Handles exceptions raised by the HTTP connection to the Discord API.
 
         Args:
@@ -422,7 +418,7 @@ class Errors(commands.Cog):
         )
 
     @staticmethod
-    async def handle_ExtensionError(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_ExtensionError(ctx, error) -> tuple[str, str, bool]:
         """Handles exceptions raised by pumpkin-py extensions
 
         Args:
@@ -488,7 +484,7 @@ class Errors(commands.Cog):
         )
 
     @staticmethod
-    async def handle_CommandError(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_CommandError(ctx, error) -> tuple[str, str, bool]:
         """Handles exceptions raised by commands
 
         Args:
@@ -506,7 +502,7 @@ class Errors(commands.Cog):
             return (
                 _(ctx, "Command error"),
                 _(ctx, "Conversion to **{name}** resulted in **{exception}**").format(
-                    name=error.converter.__name__.rstrip("Converter"),
+                    name=error.converter.__name__.removesuffix("Converter"),
                     exception=type(error.original).__name__,
                 ),
                 ReportTraceback.YES,
@@ -575,7 +571,7 @@ class Errors(commands.Cog):
         )
 
     @staticmethod
-    async def handle_CheckFailure(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_CheckFailure(ctx, error) -> tuple[str, str, bool]:
         """Handles exceptions raised by command checks.
 
         Args:
@@ -722,7 +718,7 @@ class Errors(commands.Cog):
         )
 
     @staticmethod
-    async def handle_UserInputError(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_UserInputError(ctx, error) -> tuple[str, str, bool]:
         """Handles exceptions raised by user input.
 
         Args:
@@ -795,7 +791,7 @@ class Errors(commands.Cog):
         )
 
     @staticmethod
-    async def handle_BadArgument(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_BadArgument(ctx, error) -> tuple[str, str, bool]:
         """Handles exceptions raised by bad user input.
 
         Args:
@@ -912,14 +908,13 @@ class Errors(commands.Cog):
             )
 
         if isinstance(error, commands.RangeError):
-            brackets: Tuple[str, str] = ("\u27e8", "\u27e9")
+            brackets: tuple[str, str] = ("\u27e8", "\u27e9")
             infinity: str = "\u221e"
             return (
                 _(ctx, "Bad argument"),
                 _(
                     ctx,
-                    "**{value}** is not from interval "
-                    "**{lbr}{minimum}, {maximum}{rbr}**",
+                    "**{value}** is not from interval **{lbr}{minimum}, {maximum}{rbr}**",
                 ).format(
                     value=error.value,  # FIXME This may need escaping
                     lbr=brackets[0],
@@ -938,7 +933,7 @@ class Errors(commands.Cog):
             )
 
         if isinstance(error, commands.FlagError):
-            return Errors.handle_FlagError(ctx, error)
+            return await Errors.handle_FlagError(ctx, error)
 
         return (
             _(ctx, "User input error"),
@@ -947,7 +942,7 @@ class Errors(commands.Cog):
         )
 
     @staticmethod
-    async def handle_ArgumentParsingError(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_ArgumentParsingError(ctx, error) -> tuple[str, str, bool]:
         """Handles exceptions raised by bad user input.
 
         Args:
@@ -988,7 +983,7 @@ class Errors(commands.Cog):
         )
 
     @staticmethod
-    async def handle_FlagError(ctx, error) -> Tuple[str, str, bool]:
+    async def handle_FlagError(ctx, error) -> tuple[str, str, bool]:
         """Handles exceptions raised by bad user input.
 
         Args:

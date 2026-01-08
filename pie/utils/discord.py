@@ -1,5 +1,4 @@
 import datetime
-from typing import Optional, Union
 
 import discord
 from discord.ext import commands
@@ -11,7 +10,7 @@ config = Config.get()
 
 async def get_message(
     bot: commands.Bot, guild_or_user_id: int, channel_id: int, message_id: int
-) -> Optional[discord.Message]:
+) -> discord.Message | None:
     """Get message.
 
     If the message is contained in bot cache, it is returned from it, to
@@ -40,7 +39,7 @@ async def get_message(
             # DMs?
             channel = bot.get_user(guild_or_user_id)
             if channel is None:
-                return
+                return None
         return await channel.fetch_message(message_id)
     except discord.errors.HTTPException:
         return None
@@ -54,12 +53,12 @@ def message_url_from_reaction_payload(payload: discord.RawReactionActionEvent):
 def create_embed(
     *,
     error: bool = False,
-    author: Union[discord.Member, discord.User] = None,
-    title: Optional[str] = None,
-    description: Optional[str] = None,
-    footer: Optional[str] = None,
-    color: Optional[Union[int, discord.Colour]] = None,
-    url: Optional[str] = None,
+    author: discord.Member | discord.User = None,
+    title: str | None = None,
+    description: str | None = None,
+    footer: str | None = None,
+    color: int | discord.Colour | None = None,
+    url: str | None = None,
 ) -> discord.Embed:
     """Create discord embed.
 
@@ -95,7 +94,7 @@ def create_embed(
         icon_url=getattr(author, "avatar_url", None),
         text=base_footer,
     )
-    embed.timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
+    embed.timestamp = datetime.datetime.now(tz=datetime.UTC)
 
     return embed
 
@@ -146,7 +145,7 @@ async def remove_reaction(
     return True
 
 
-async def update_presence(bot: commands.Bot, *, status: str = None) -> None:
+async def update_presence(bot: commands.Bot, *, status: str | None = None) -> None:
     """Update the bot presence.
 
     The Activity is always set to ``<prefix>help``. The Status is loaded
@@ -164,10 +163,10 @@ async def update_presence(bot: commands.Bot, *, status: str = None) -> None:
 
 
 async def send_dm(
-    user: Union[discord.Member, discord.User],
-    text: Optional[str] = None,
+    user: discord.Member | discord.User,
+    text: str | None = None,
     *,
-    embed: Optional[discord.Embed] = None,
+    embed: discord.Embed | None = None,
 ) -> bool:
     if text is None and embed is None:
         raise ValueError("Could not send an empty message.")

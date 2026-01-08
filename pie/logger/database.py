@@ -1,12 +1,12 @@
 from __future__ import annotations
-from typing import Optional, List, Dict
 
-from sqlalchemy import BigInteger, Column, String, Integer
+from sqlalchemy import BigInteger
+from sqlalchemy.orm import Mapped, mapped_column
 
-from pie.database import database, session
+from pie.database import session, Base
 
 
-class LogConf(database.base):
+class LogConf(Base):
     """Log configuration.
 
     .. note::
@@ -51,20 +51,20 @@ class LogConf(database.base):
 
     __tablename__ = "logging"
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    guild_id = Column(BigInteger)
-    channel_id = Column(BigInteger)
-    scope = Column(String)  # "bot" or "guild"
-    level = Column(Integer)  # integer representation of logging levels
-    module = Column(String, default=None)
+    idx: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger)
+    channel_id: Mapped[int] = mapped_column(BigInteger)
+    scope: Mapped[str] = mapped_column()  # "bot" or "guild"
+    level: Mapped[int] = mapped_column()  # integer representation of logging levels
+    module: Mapped[str | None] = mapped_column(default=None)
 
     @staticmethod
     def _get_subscriptions(
         scope: str,
         *,
         level: int,
-        module: Optional[str],
-    ) -> List[LogConf]:
+        module: str | None,
+    ) -> list[LogConf]:
         """Get all channels subscribed of given scope.
 
         :param scope: ``bot`` or ``guild``.
@@ -93,23 +93,21 @@ class LogConf(database.base):
         )
         # Filter our duplicates. At first the module specific configurations
         # are considered, so they will always come before the global ones.
-        query: Dict[int, LogConf] = {}
+        query: dict[int, LogConf] = {}
         for q in query_module + query_global:
             if q.guild_id not in query.keys():
                 query[q.guild_id] = q
         return list(query.values())
 
     @staticmethod
-    def get_bot_subscriptions(
-        *, level: int, module: Optional[str] = None
-    ) -> List[LogConf]:
+    def get_bot_subscriptions(*, level: int, module: str | None = None) -> list[LogConf]:
         query = LogConf._get_subscriptions("bot", level=level, module=module)
         return query
 
     @staticmethod
     def get_guild_subscriptions(
-        *, level: int, guild_id: int, module: Optional[str] = None
-    ) -> List[LogConf]:
+        *, level: int, guild_id: int, module: str | None = None
+    ) -> list[LogConf]:
         query = LogConf._get_subscriptions("guild", level=level, module=module)
         # This is not optimal concerning performance, but there will be only
         # a few items, not milions. So it does not matter that much, and it
@@ -118,7 +116,7 @@ class LogConf(database.base):
         return query
 
     @staticmethod
-    def get_all_subscriptions(*, guild_id: int) -> List[LogConf]:
+    def get_all_subscriptions(*, guild_id: int) -> list[LogConf]:
         """Get all log subscriptions in given guild.
 
         :param guild_id: Guild ID of subscription channel.
@@ -134,7 +132,7 @@ class LogConf(database.base):
         guild_id: int,
         channel_id: int,
         level: int,
-        module: Optional[str],
+        module: str | None,
     ) -> LogConf:
         """Add log subscription for bot events.
 
@@ -170,7 +168,7 @@ class LogConf(database.base):
 
     @staticmethod
     def add_bot_subscription(
-        *, guild_id: int, channel_id: int, level: int, module: Optional[str] = None
+        *, guild_id: int, channel_id: int, level: int, module: str | None = None
     ):
         query = LogConf._add_subscription(
             "bot",
@@ -183,7 +181,7 @@ class LogConf(database.base):
 
     @staticmethod
     def add_guild_subscription(
-        *, guild_id: int, channel_id: int, level: int, module: Optional[str] = None
+        *, guild_id: int, channel_id: int, level: int, module: str | None = None
     ):
         query = LogConf._add_subscription(
             "guild",
@@ -195,9 +193,7 @@ class LogConf(database.base):
         return query
 
     @staticmethod
-    def _remove_subscription(
-        scope: str, *, guild_id: int, module: Optional[str]
-    ) -> bool:
+    def _remove_subscription(scope: str, *, guild_id: int, module: str | None) -> bool:
         count = (
             session.query(LogConf)
             .filter_by(scope=scope, guild_id=guild_id, module=module)
@@ -207,11 +203,11 @@ class LogConf(database.base):
         return count > 0
 
     @staticmethod
-    def remove_bot_subscription(*, guild_id: int, module: Optional[str]) -> bool:
+    def remove_bot_subscription(*, guild_id: int, module: str | None) -> bool:
         return LogConf._remove_subscription("bot", guild_id=guild_id, module=module)
 
     @staticmethod
-    def remove_guild_subscription(*, guild_id: int, module: Optional[str]) -> bool:
+    def remove_guild_subscription(*, guild_id: int, module: str | None) -> bool:
         return LogConf._remove_subscription("guild", guild_id=guild_id, module=module)
 
     def __repr__(self) -> str:

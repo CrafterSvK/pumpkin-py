@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from discord.ext import commands
 
 from pie import check, logger, utils, i18n
@@ -48,7 +46,7 @@ class Logging(commands.Cog):
                 self.module = conf.module or ""
 
         items = [Item(conf) for conf in confs]
-        table: List[str] = utils.text.create_table(
+        table: list[str] = utils.text.create_table(
             items,
             header={
                 "level": _(ctx, "Log level"),
@@ -63,15 +61,13 @@ class Logging(commands.Cog):
 
     @check.acl2(check.ACLevel.GUILD_OWNER)
     @logging_.command(name="set")
-    async def logging_set(
-        self, ctx, scope: str, level: str, module: Optional[str] = None
-    ):
+    async def logging_set(self, ctx, scope: str, level: str, module: str | None = None):
         """Set the current channel as logging channel."""
         if scope not in ("bot", "guild"):
             await ctx.reply(_(ctx, "Invalid scope."))
             return
 
-        level: str = level.upper()
+        level = level.upper()
         if level not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "NONE"):
             await ctx.reply(_(ctx, "Invalid level."))
             return
@@ -105,17 +101,15 @@ class Logging(commands.Cog):
 
     @check.acl2(check.ACLevel.GUILD_OWNER)
     @logging_.command(name="unset")
-    async def logging_unset(self, ctx, scope: str, module: Optional[str] = None):
+    async def logging_unset(self, ctx, scope: str, module: str | None = None):
         """Stop using current channel as logging channel for given filter."""
         if scope not in ("bot", "guild"):
             await ctx.reply(_(ctx, "Invalid scope."))
             return
 
-        log_message: str
+        log_message: str = ""
         if scope == "bot":
-            result = LogConf.remove_bot_subscription(
-                guild_id=ctx.guild.id, module=module
-            )
+            result = LogConf.remove_bot_subscription(guild_id=ctx.guild.id, module=module)
             log_message = "Bot logging disabled"
         if scope == "guild":
             result = LogConf.remove_guild_subscription(
